@@ -1,5 +1,5 @@
-from tffabric import langtools
-from tffabric.data import attrib_errors
+from tfbuilder.helpertools import langtools
+from tfbuilder.data import attrib_errors
 
 generic = {
     'lang': 'generic',

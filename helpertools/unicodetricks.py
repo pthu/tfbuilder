@@ -2,9 +2,7 @@
 # Some of them are modified later on by me. I am very grateful
 # to Dirk for introducing me into the mechanics of unicodedata!
 
-import pickle
 from unicodedata import category, normalize
-from pprint import pprint
 
 letter = {'L'}
 letter_space = {'L', 'Z'}
@@ -13,10 +11,39 @@ punc = {'P'}
 letter_dia = {'L', 'M'}
 udnorm = 'NFC'
 
-# Handling of punctuation connected to words
-# NB: stripping of punctuation works best on 
-#     NFC(!) formatted text!
-# Be aware that any function returns text in NFC!
+
+def cleanWords(words, norm=udnorm): 
+    """splitWord splits off punctuation and 
+    non-word characters from words in a string, 
+    while glueing together words that have one or 
+    more non-letter characters inbetween.
+    It can be used for cleaning single words,
+    or to tokenize full sentences.
+    
+    returns: ('string', 'string', ...)
+    """
+    w = normalize(norm, words)
+    pP = 0
+    for i in range(len(w)):
+        if category(w[i])[0] not in letter:
+            pP += 1
+        else:
+            break
+    pW = pP
+    for i in range(pP, len(w)):
+        if category(w[i])[0] in letter_dia:
+            pW += 1
+        else:
+            break
+    realWord = w[pP:pW]
+    pA = pW
+    for i in range(pW, len(w)):
+        if category(w[i])[0] not in letter:
+            pA += 1
+        else:
+            break
+    res = (realWord,) + (cleanWord(w[pA:]) if pA < len(w) else ())
+    return res if not res == ('',) else ()
 
 def rsplitPunc(word, norm=udnorm):
     '''This function splits off punctuation 
@@ -27,7 +54,7 @@ def rsplitPunc(word, norm=udnorm):
     w = normalize(norm, word)
     afterWord = len(w)
     for i in range(len(w) - 1, -1, -1):
-        if category(w[i])[0] not in letter:
+        if category(w[i])[0] not in letter_dia:
             afterWord = i
         else:
             break
@@ -42,7 +69,7 @@ def lsplitPunc(word, norm=udnorm):
     w = normalize(norm, word)
     beforeWord = 0
     for i in range(len(w) - 1):
-        if category(w[i])[0] not in letter:
+        if category(w[i])[0] not in letter_dia:
             beforeWord = i
         else:
             beforeWord +=1
@@ -52,7 +79,11 @@ def lsplitPunc(word, norm=udnorm):
 
 def splitPunc(word, norm=udnorm):
     '''This function splits off punctuation 
-    from words on both sides of the word.
+    from words on both sides of the word. 
+    It returns a tuple with the punctuation before,
+    the word itself, and punctuation after.
+    
+    returns ((pre, word, after), (pre, word, after), ...)
     '''
     w = normalize(norm, word)
     pP = 0
@@ -64,7 +95,7 @@ def splitPunc(word, norm=udnorm):
     preWord = w[0:pP] if pP else ''
     pW = pP
     for i in range(pP, len(w)):
-        if category(w[i])[0] in letter:
+        if category(w[i])[0] in letter_dia:
             pW += 1
         else:
             break
@@ -82,8 +113,6 @@ def splitPunc(word, norm=udnorm):
     rest = splitPunc(w[pA:]) if pA < len(w) else ()
     return ((preWord, word, afterWord),) + rest
 
-
-# Tokenization
 
 def splitWord(word, norm=udnorm):
     '''splitWord is an advanced tokenizer, that
@@ -112,6 +141,21 @@ def splitWord(word, norm=udnorm):
         else:
             break
     return (realWord,) + (splitWord(w[pA:]) if pA < len(w) else ())
+
+#Tokenization
+
+def tokenize(sentence):
+    """tokenize feeds a sentence string
+    to splitWord, while concatenating the
+    resulting strings into one tuple.
+    
+    returns: ('string', 'string', ...)
+    """
+    return reduce(
+        operator.add,
+        (cleanWord(word) for word in sentence.strip().split()),
+        (),
+    )
 
 # Text formatting
 # NFD is used to split accents from letters;

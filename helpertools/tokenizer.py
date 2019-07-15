@@ -9,9 +9,14 @@ punc = {'P'}
 letter_dia = {'L', 'M'}
 
 
-def splitWord(word, norm='NFD'): 
-    w = normalize(norm, word)
-    tokens = ()
+def cleanWord(w): 
+    """splitWord splits off punctuation and 
+    non-word characters from a string, while 
+    glueing together words that have one or 
+    more non-letter characters inbetween.
+    
+    returns: ('string',)
+    """
     pP = 0
     for i in range(len(w)):
         if category(w[i])[0] not in letter:
@@ -31,18 +36,30 @@ def splitWord(word, norm='NFD'):
             pA += 1
         else:
             break
-    return (realWord,) + (splitWord(w[pA:]) if pA < len(w) else ())
+    res = (realWord,) + (cleanWord(w[pA:]) if pA < len(w) else ())
+    return res if not res == ('',) else ()
 
 
-def tokenize(sentence, norm='NFD'):
+def tokenize(sentence):
+    """tokenize feeds a sentence string
+    to splitWord, while concatenating the
+    resulting strings into one tuple.
+    
+    returns: ('string', 'string', ...)
+    """
     return reduce(
         operator.add,
-        (splitWord(word) for word in sentence.strip().split()),
+        (cleanWord(word) for word in sentence.strip().split()),
         (),
     )
+
+
+def splitPunc():
+    
 
 
 def stripAccents(word):
     return ''.join(c for c in normalize('NFD', word.lower())
                   if category(c)[0] in letter)
+
 
