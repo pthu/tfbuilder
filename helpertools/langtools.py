@@ -1,12 +1,11 @@
-# Languages.py contains any important information that
-# is important to process a language string,
-# both for TEI XML and CSV.
+# Languages.py contains several classes with methods that
+# are important to process strings, both for TEI XML and CSV.
 # Any information that is specific for the TEI XML 
 # conversion, can be found in config.py
 
 from tfbuilder import tf_config
 from tfbuilder.data import attrib_errors
-from tfbuilder.helpertools import tokenizer
+from tfbuilder.helpertools.unicodetricks import tokenizer, splitPunc, cleanWords, plainCaps, plainLow
 
 from unicodedata import normalize
 
@@ -14,43 +13,51 @@ class Generic:
     config = tf_config.generic
     udnorm = config['udnorm']
 #     udnorm = tf_config.generic['udnorm']
-    
-    @classmethod
-    def tokenize(cls, string):
-    """Basic tokenization on spaces.
-    
-    This basic tokenization method splits a STRING 
-    on SPACES, without returning empty strings.
-    Any white space before and after is stripped off.
-    It outputs string parts in a normalized way,
-    according to the norm given in tf_config.py.
-    
-    returns ['normalized_string', 'normalized_string', ...]
-    """
-    return list(filter(None, 
-      normalize(cls.udnorm, string.strip().split(' '))))
-    
-    @classmethod
-    def stripTokenize(cls, string):
-        """Advanced tokenization on non-letter characters.
-        
-        This advanced tokenization method splits a STRING 
-        on NON-LETTER characters (as defined by the unicode
-        data category definitions), without returning empty 
-        strings. Before the splitting process, strings are
-        converted to the NFC norm (combining accents with
-        letters), to prevent splitting on accents.
-        
-        Any white space before and after is stripped off.
-        It outputs string parts in a normalized way,
-        according to the norm given in tf_config.py.
-        
-        NB: non-letter characters get lost during tokenization!
 
-        returns ['normalized_string', 'normalized_string', ...]
+    @classmethod
+    def ltNormalize(cls, string):
+        """langtools normalize usually uses the unicodedata
+        normalize() function; however, for many languages it
+        will be overriden with a custom normalization function"""
+        return normalize(cls.udnorm, string) 
+    
+    @classmethod
+    def tokenize(cls, sentence, norm=udnorm, punc=False, clean=False):
+    """This advanced tokenizer is based on the unicodedata
+    categories. It is able to tokenize much more sophisticated
+    than the python sentence.split() function.
+    
+    punc=False:
+        All punctuation before and after a word is deleted.
+    
+    punc=True:
+        All punctuation before and after a word is given
+    
+    clean=False:
+        If punctuation stands in the middle of letters, 
+        without surrounding spaces, the word is split 
+        on punctuation.
+    
+    clean=True:
+        If punctuation stands in the middle of a word,
+        without spaces, the punctuation is deleted and the 
+        two parts of the word are glued together.
+    
+    returns ['string', 'string', ...]
+    """
+    return tokenizer(sentence, norm=cls.udnorm, punc=False, clean=False):
+    
+    @classmethod
+    def splitTokenize(cls, sentence):
+        """Tokenizes a sentence, while preserving punctuation.
+        
+        The difference with tokenize() is that splitTokenize
+        preserves splits punctuation from the word.
+        
+        returns: ((pre, word, post), (pre, word, post), ...)
         """
-        tokens = tokenizer.tokenize(string)
-        return tuple(normalize(norm=cls.udnorm, word) for word in tokens)
+        splitPunc(sentence, norm=cls.udnorm, clean=True):
+        
     
     @classmethod
     def origWord(cls, word):
@@ -69,11 +76,14 @@ class Generic:
         before, inbetween and after with
         normalized accentuation
         """
-        
+        return cleanWords(word, norm=udnorm, clean=True)
     
-    @classmethod
-    def plainWord(self, word):
-        return stripAccents
+    @staticmethod
+    def plainWord(word, caps=False):
+        if caps:
+            return plainCaps(word)
+        else:
+            return plainLow(word)
 
     
     
@@ -81,17 +91,25 @@ class Greek(Generic):
     config = tf_config.greek
     
     @staticmethod
-    def tokenize(self, string):
-    
-    @staticmethod
-    def normalize(self):
+    def jtNormalize(self, word):
+        
         
     
     @staticmethod
-    def jt_normalize(self, word):
-        
-    @staticmethod
-    def lemmatize(self, word):
+    def startLemmatizer():
+        lemmatizer_open = open(SRC_DIR + '/lemmatizer.pickle', 'rb')
+        lemmatizer = pickle.load(lemmatizer_open)
+        lemmatizer_open.close()
+        return lemmatizer
+    
+    @classmethod #TODO!
+    def lemmatize(word, norm=udnorm, lemmatizer):
+        word = normalize('NFD', word.lower())
+        if word in lemmatizer:
+            word = ','.join(normalize(norm, lemmatizer[word]))
+        else:
+            word = f'*{word}'
+        return word
     
 
   
