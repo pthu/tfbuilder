@@ -58,22 +58,34 @@ def lsplitPunc(word, norm=udnorm, clean=False):
         return (w[0:beforeWord], w[beforeWord:])
     
 
-def splitPunc(word, norm=udnorm, clean=False):
+def splitPunc(words, norm=udnorm, clean=False,
+              splitters=None, non_splitters=None):
     '''This function splits off punctuation 
     from words on both sides of the word. 
     It returns a tuple with tuples, containing
     the punctuation before, the word itself, 
-    and punctuation after.
+    and punctuation after. It can be used for
+    multiple words
     
     clean=False:
         if punctuation is within the word, the word
-        will be split into two!
+        will be split into two, except for characters
+        defined in the non-splitters list.
     clean=True:
-        punctuation within a word will be deleted
+        punctuation within a word will be deleted, 
+        except for characters defined in the splitters 
+        list. In that case, the string will be split.
+    
+    
+    splitters=['character', 'character', ...]
+    non_splitters=['character', 'character', ...]
+        
     
     returns ((pre, word, after), (pre, word, after), ...)
     '''
-    w = normalize(norm, word)
+    if splitters is None: splitters = ()
+    if non_splitters is None: non_splitters = ()
+    w = normalize(norm, words)
     pP = 0
     for i in range(len(w)):
         if category(w[i])[0] not in letter_dia:
@@ -83,15 +95,21 @@ def splitPunc(word, norm=udnorm, clean=False):
     preWord = w[0:pP].strip() if pP else ''
     pW = pP
     for i in range(pP, len(w)):
-        if category(w[i])[0] in letter_dia:
+        if w[i] in non_splitters:
+            break
+        elif category(w[i])[0] in letter_dia:
             pW += 1
         else:
             break
     word = w[pP:pW]
     pA = pW
+    nsplit = False
     for i in range(pW, len(w)):
         if clean:
             if category(w[i])[0] in space:
+                pA += 1
+                break
+            elif w[i] in splitters:
                 pA += 1
                 break
             elif category(w[i])[0] in letter_dia:
@@ -104,16 +122,26 @@ def splitPunc(word, norm=udnorm, clean=False):
             if category(w[i])[0] in space:
                 pA += 1
                 break
+            elif w[i] in non_splitters:
+                nsplit = True
+                continue
             elif category(w[i])[0] not in letter_dia:
+                nsplit = False
                 pA += 1
+            elif category(w[i])[0] in letter_dia and nsplit == True:
+                pW = i + 1
+                pA = pW
+                word += w[i]
             else:
                 break
     afterWord = w[pW:pA].strip()
-    rest = splitPunc(w[pA:], clean=clean) if pA < len(w) else ()
+    rest = splitPunc(w[pA:], clean=clean, splitters=splitters, 
+                     non_splitters=non_splitters) if pA < len(w) else ()
     return ((preWord, word, afterWord),) + rest
 
 
-def cleanWords(words, norm=udnorm, clean=False): 
+def cleanWords(words, norm=udnorm, clean=False,
+               splitters=None, non_splitters=None): 
     """cleanWords splits off any punctuation and 
     non-word characters from words in a string. 
     It can be used for cleaning single words,
@@ -122,13 +150,17 @@ def cleanWords(words, norm=udnorm, clean=False):
     clean=False:
         letter characters that have punctuation
         inbetween but no space, are split on punctuation
+        exceptions can be defined in non_splitters
     
     clean=True:
         words with punctuation within (without whitespace) 
         are glued together without punctuation
+        exceptions can be defined in splitters
     
     returns: ('string', 'string', ...)
     """
+    if splitters is None: splitters = ()
+    if non_splitters is None: non_splitters = ()
     w = normalize(norm, words)
     pP = 0
     for i in range(len(w)):
@@ -144,9 +176,12 @@ def cleanWords(words, norm=udnorm, clean=False):
             break
     realWord = w[pP:pW]
     pA = pW
+    nsplit = False
     for i in range(pW, len(w)):
         if clean:
             if category(w[i])[0] in space:
+                break
+            elif w[i] in splitters:
                 break
             elif category(w[i])[0] not in letter_dia:
                 pA += 1
@@ -154,19 +189,27 @@ def cleanWords(words, norm=udnorm, clean=False):
                 realWord += w[i]
                 pA += 1
         else:
-            if category(w[i])[0] not in letter_dia:
+            if w[i] in non_splitters:
+                nsplit = True
+                continue
+            elif category(w[i])[0] in letter_dia and nsplit == True:
+                pW = i + 1
+                pA = pW
+                realWord += w[i]
+            elif category(w[i])[0] not in letter_dia:
+                nsplit = False
                 pA += 1
             else:
                 break
-    if clean:
-        res = (realWord,) + (cleanWords(w[pA:], clean=clean) if pA < len(w) else ())
-        return res if not res == ('',) else ()
-    else:
-        res = (realWord,) + (cleanWords(w[pA:], clean=clean) if pA < len(w) else ())
-        return res if not res == ('',) else ()
+    res = (realWord,) + \
+          (cleanWords(w[pA:], norm=udnorm, clean=clean, 
+                      splitters=splitters, non_splitters=non_splitters) 
+           if pA < len(w) else ())
+    return res if not res == ('',) else ()
 
     
-def tokenizer(sentence, norm=udnorm, punc=False, clean=False): #TODO add function input
+def tokenizer(sentence, norm=udnorm, punc=False, clean=False,
+              splitters=None, non_splitters=None, func=None):
     """tokenize feeds a sentence string
     to splitWord, while concatenating the
     resulting strings into one tuple.
@@ -179,22 +222,30 @@ def tokenizer(sentence, norm=udnorm, punc=False, clean=False): #TODO add functio
         
     returns: ('string', 'string', ...)
     """
-    if punc:
-        if clean:
-            return tuple(f'{pre}{word}{post}' \
-                for pre, word, post in splitPunc(sentence, norm=udnorm, clean=True))
-        else:
-            return tuple(f'{pre}{word}{post}' \
-                for pre, word, post in splitPunc(sentence, norm=udnorm, clean=False))
-            
+    if func:
+        func(sentence)
     else:
-        if clean:
-            return cleanWords(sentence, clean=True)
+        if punc:
+            if clean:
+                return splitPunc(sentence, norm=udnorm, clean=True,
+                                 splitters=splitters, non_splitters=non_splitters)
+            else:
+                return splitPunc(sentence, norm=udnorm, clean=False,
+                                 splitters=splitters, non_splitters=non_splitters)
         else:
-            return cleanWords(sentence, clean=False)
+            if clean:
+                return cleanWords(sentence, clean=True,
+                                  splitters=splitters, non_splitters=non_splitters)
+            else:
+                return cleanWords(sentence, clean=False,
+                                  splitters=splitters, non_splitters=non_splitters)
 
 # Text formatting
 # NFD is used to split accents from letters;
+
+def stripAccents(word):
+    return ''.join(c for c in normalize('NFD', word.lower())
+                  if category(c)[0] in letter)
 
 # Conversions of full sentences with spaces
 def plainMajuscule(tokens):

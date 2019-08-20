@@ -13,10 +13,10 @@
 import pickle
 from unicodedata import normalize, category
 from os import path
-from pprint import pprint
+# from pprint import pprint
 import xml.etree.ElementTree as etree
 from tf.fabric import Timestamp
-import nbimporter
+# import nbimporter
 
 udnorm = 'NFD'
 

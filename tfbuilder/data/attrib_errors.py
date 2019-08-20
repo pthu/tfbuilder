@@ -1,4 +1,5 @@
-greek = {
+error_dict = {
+'greek': {
         '{http://www.w3.org/XML/1998/namespace}id': 'id',
         '{http://www.w3.org/XML/1998/namespace}lang': 'lang',
         'boo': 'book',
@@ -55,12 +56,13 @@ greek = {
         'subdsection': 'subsection',
         'subection': 'subsection',
         'pargraph': 'paragraph',
-}
+},
 
-latin = {
+'latin': {
 
-}
+},
 
-custom = {
+'custom': {
     
+},
 }
