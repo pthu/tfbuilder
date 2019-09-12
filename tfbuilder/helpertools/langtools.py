@@ -2,6 +2,7 @@
 # are important to process strings, both for TEI XML and CSV.
 # Any information that is specific for the TEI XML 
 # conversion, can be found in config.py
+import pickle
 from data import attrib_errors
 from helpertools.unicodetricks import splitPunc, cleanWords, plainCaps, plainLow
 from helpertools.data.greek_elisions import ELISIONS
@@ -16,6 +17,10 @@ from greek_normalisation.normalise import Normaliser
 class Generic(object):
     udnorm = 'NFD'
 
+    @classmethod
+    def replace(cls, token):
+        return token
+    
     @classmethod
     def ltNormalize(cls, string):
         """langtools normalize usually uses the unicodedata
@@ -61,7 +66,7 @@ class Generic(object):
         
         returns: ((pre, word, post), (pre, word, post), ...)
         """
-        return splitPunc(sentence, norm=cls.udnorm, punc=punc, clean=clean,
+        return splitPunc(sentence, norm=cls.udnorm, clean=clean,
                          splitters=splitters, non_splitters=non_splitters)
 
     # STANDARD TEXT OUTPUT FORMATS
@@ -74,7 +79,7 @@ class Generic(object):
         returns 'normalized_string'
         """
         if split:
-            return normalize(cls.udnorm, ''.join(word))
+            return normalize(cls.udnorm, ''.join(token))
         else:
             return normalize(cls.udnorm, token)
     
@@ -112,33 +117,35 @@ class Greek(Generic):
     ELISION_norm = {normalize('NFC', k.strip('᾽')): v for k, v in ELISIONS.items()}
 
     @classmethod
-    def replace(cls, word):
+    def replace(cls, token):
+        (pre, word, post) = token
         plain_word = plainLow(word)
-        if normalize('NFC', word) in ELISION_norm:
-            return normalize(cls.udnormd, ELISION_norm[word])
+        if normalize('NFC', word) in cls.ELISION_norm:
+            return (pre, normalize(cls.udnorm, cls.ELISION_norm[normalize('NFC', word)]), post)
         # Deletion of movable-nu
-        elif plain_word.endswith(('εν', 'σιν', 'στιν')) and len(midWord_pl) >= 3:
-            return word[:-1]
+        elif plain_word.endswith(('εν', 'σιν', 'στιν')) and len(plain_word) >= 3:
+            return (pre, word[:-1], post)
         # Handling final-sigma
         elif plain_word.endswith('σ'):
-            return word[:-1] + 'ς'
+            return (pre, word[:-1] + 'ς', post)
         # Handling various forms of ου
         elif plain_word in ('ουχ', 'ουκ'):
-            return word[:-1]
+            return (pre, word[:-1], post)
         # Handling ἐξ
         elif plain_word == 'εξ':
-            return word[:-1] + 'κ'
+            return (pre, word[:-1] + 'κ', post)
         else:
-            return word
+            return token
 
     
     @classmethod
-    def jtNormalize(cls, word):
+    def jtNormalize(cls, token):
         """This method returns a normalized word
         according to the normalization procedure
         of James Tauber; formatted in the NFD format.
         """
-        return normalize(cls.udnorm, Normaliser().normalise(word))
+        pre, word, post = token
+        return normalize(cls.udnorm, Normaliser().normalise(word)[0])
         
     @staticmethod
     def startLemmatizer():
@@ -153,26 +160,34 @@ class Greek(Generic):
     def lemmatize(cls, word, lemmatizer):
         word = normalize('NFD', word.lower())
         if word in lemmatizer:
-            lemma = ','.join(normalize(cls.udnorm, lemmatizer[word]))
+            lemma = normalize(cls.udnorm, ','.join(lemmatizer[word]))
         else: 
-            word = cls.jtNormalize(word)
+            word = cls.jtNormalize(('', word, ''))
             if word in lemmatizer:
-                lemma = ','.join(normalize(cls.udnorm, lemmatizer[word]))
+                lemma = normalize(cls.udnorm, ','.join(lemmatizer[word]))
             else:
-                word = cls.plainWord(word)
+                word = cls.plainWord(('', word, ''))
                 if word in lemmatizer:
-                    lemma = ','.join(normalize(cls.udnorm, lemmatizer[word]))
+                    lemma = normalize(cls.udnorm, ','.join(lemmatizer[word]))
                 else:
-                    lemma = f'*{word}'
-        return normalize(cls.udnorm, lemma)
+                    lemma = f'*{normalize(cls.udnorm, word)}'
+        return lemma
 
+    @staticmethod
+    def checkEncoding(elem):
+        try:
+            elem.encode('ascii')
+            return 'beta'
+        except UnicodeEncodeError:
+            return 'uni'
+    
     @classmethod
     def beta2uni(cls, word):
         """Converts betacode to unicode"""
         beta_to_uni = Replacer()
         return normalize(cls.udnorm, beta_to_uni.beta_code(word))
     
-    @staticmethod
+    @classmethod
     def uni2betaPlain(cls, word):
         """Converts unicode to unaccented betacode,
         to be used in the Morpheus morphological
@@ -186,28 +201,28 @@ class Greek(Generic):
         pass
     
     # ADDITIONAL TEXT OUTPUT FORMATS
+    @classmethod
     def normWord(cls, token, split=True):
         if split:
-            pre, word, post = token
-            w, analysis = cls.jtNormalize(word)
-            return w
+            return normalize(cls.udnorm, cls.jtNormalize(token))
         else:
-            w, analysis = cls.jtNormalize(token)
-            return normalize(cls.udnorm, w)
-                      
+            return normalize(cls.udnorm, cls.jtNormalize(('', token, '')))
+    
+    @classmethod
     def betaPlainWord(cls, token, split=True):
         if split:
             pre, word, post = token
             return cls.uni2betaPlain(word)
         else:
             return cls.uni2betaPlain(token)
-                      
-    def lemmaWord(cls, token, split=True):
+    
+    @classmethod
+    def lemmaWord(cls, token, lemmatizer, split=True):
         if split:
             pre, word, post = token
-            return cls.lemmatize(word)
+            return cls.lemmatize(word, lemmatizer)
         else:
-            return cls.lemmatize(token)
+            return cls.lemmatize(token, lemmatizer)
                       
 class Latin(Generic):
     udnorm = 'NFD'

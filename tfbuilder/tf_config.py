@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from helpertools import langtools
 from data import attrib_errors
 # from .tfbuilder.helpertools import langtools
@@ -33,6 +34,7 @@ langsettings = {
                            'clean': False,
                            'splitter': None,
                            'non_splitter': ('-',),},
+        'lemmatizer': None,
         'text_formats': {'orig': {'format': '{pre}{orig}{post} ',
                                   'function': langtools.Generic.origWord,
                                   'metadata': 'original format of the word including punctuation'},
@@ -66,9 +68,14 @@ langsettings = {
         'tokenizer': langtools.Greek.splitTokenize,
         'tokenizer_args': {'punc': True, 
                            'clean': False,
-                           'splitter': None,
-                           'non_splitter': ('-',),},
+                           'splitters': None,
+                           'non_splitters': ('-',),},
+        'token_out': {'pre': {'desc': 'interpunction before word'},
+                              'word': {'desc': 'the word without interpunction'},
+                              'post': {'desc': 'interpunction after word'},
+                     },
         'replace_func': langtools.Greek.replace,
+        'lemmatizer': langtools.Greek.startLemmatizer,
         'text_formats': {'fmt:text-orig-full': {'name': 'orig',
                                                 'format': '{pre}{orig}{post} ',
                                                 'function': langtools.Greek.origWord,
@@ -88,7 +95,7 @@ langsettings = {
                          'fmt:text-orig-beta-plain': {'name': 'beta_plain',
                                                 'format': '{beta_plain} ',
                                                 'function': langtools.Greek.betaPlainWord,
-                                                'metadata': 'plain format in lowercase betacode (=Greek in Roman characters'},
+                                                'metadata': 'plain format in lowercase betacode (=Greek in Roman characters)'},
                          'fmt:text-orig-lemma': {'name': 'lemma',
                                                 'format': '{lemma} ',
                                                 'function': langtools.Greek.lemmaWord,
@@ -106,12 +113,12 @@ langsettings = {
         'section_tags': {'div', 'milestone'},
 #         'structure_keys': {'unit', 'n',},
         'ignore_attrib_keys': {'corresp', 'merge', 'resp',},
-        'non_section_keys': {'altpage', 'altnumbering', 'altref', 'mspage', 'xml:lang'},
+        'non_section_keys': {'altpage', 'altnumbering', 'altref', 'mspage', 'xml:lang', 'type'},
         'ignore_section_values': {'edition',},
         'ignore_attrib_values': {'edition', 'textpart'},
         'non_text_elems': {'head', 'note', 'title', 'bibl', 'del',},
         'sentence_delimit': {'.', ';',},
-        'phrase_delimit': {',', '·', '·', ':',},
+        'phrase_delimit': {',', '·', '·', ':',},
         'langtool': langtools.Greek,
     },
     'latin': {

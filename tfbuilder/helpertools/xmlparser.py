@@ -1,5 +1,6 @@
 import re
 import operator
+from pprint import pprint
 from collections import OrderedDict
 from data.attrib_errors import error_dict
 from ordered_set import OrderedSet
@@ -36,7 +37,6 @@ def xmlSplitter(xmlfile):
                   .replace('<', '#!#<')\
                   .replace('>', '>#!#')\
                   .split('#!#')))
-                  
     return data
 
 
@@ -53,7 +53,7 @@ def attribClean(elem, lang='generic', **kwargs):
     (tag, {keys: values})
     '''
     # clean the elem
-    elem = elem.strip('<>\ ')
+    elem = elem.strip('<>\/ ')
     elem = re.sub(r'\s*=\s*"\s*', '="', elem)
     # define the tag
     tag = elem[:elem.find(' ')]
@@ -82,9 +82,8 @@ def elemParser(elem, lang='generic', **kwargs):
     - correction of mistakes in attributes defined in kwargs[lang]
       (see attribClean)
     ''' 
-    # Application of patterns:
     comment = False
-    
+    # Application of patterns:
     if comment:
         if commentStopRE.fullmatch(elem):
             comment = False
@@ -95,8 +94,6 @@ def elemParser(elem, lang='generic', **kwargs):
         elif commentStartRE.fullmatch(elem):
             comment = True
             code, content = 'comment', ''
-#         elif commentStopRE.fullmatch(elem):
-#             return ('comment', '')
         elif bodyStartRE.fullmatch(elem):
             code, content = 'bodyStart', ''
         elif bodyStopRE.fullmatch(elem):
@@ -129,7 +126,7 @@ def metadataReader(data, lang='generic', **kwargs):
     
     for elem in data:
         code, content = elemParser(elem, lang=lang, **error_dict)
-        print(code, content)
+#         print(code, content)
         if code == 'bodyStart':
             body_index = data.index(elem) + 1
             break
@@ -208,6 +205,9 @@ def attribsAnalysis(data, lang='generic', **kwargs):
                 open_section_tags.add(tag_name)
         else:
             continue
+#     pprint(attribs_dict)
+#     pprint(section_tags)
+#     pprint(open_section_tags)
     return attribs_dict, section_tags, open_section_tags
     
                                   
@@ -217,29 +217,42 @@ def lenAttribsDict(dictionary):
     return {key: {k: len(v) for k, v in val.items()} for key, val in dictionary.items()}
                               
                                   
-def sectionElems(attribs_dict, section_tags):
+def sectionElems(attribs_dict, section_labels, **kwargs):
     """takes the attribs_dict, and section_tags
-    returned by attribsDict() as input and returns the
+    returned by attribsAnalysis() as input and returns the
     sections that most probably define the structure of the XML.
     """
+#     print(attribs_dict)
+    print(section_labels)
     section_dict = {}
-    sections = OrderedSet()
-    for tag_name in section_tags:
+    sections = []
+    for tag_name in section_labels:
         tag, keys = tag_name
         if len(keys) == 1:
             section_dict[tag_name] = (tag, keys[0])
             sections.add(tag)
         else:
             if 'n' in attribs_dict[tag_name]:
-                section_key = max(attribs_dict[tag_name], key=lambda key: attribs_dict[tag_name][key] \
-                                  if not key == 'n' else OrderedSet())
+                section_key = max(attribs_dict[tag_name], 
+                                  key=lambda key: attribs_dict[tag_name][key] \
+                                  if not key == 'n' 
+                                  and not key in kwargs['non_section_keys']
+                                  else OrderedSet())
                 section_dict[tag_name] = (section_key, 'n')
             else:
-                value = max(attribs_dict[tag_name], key=lambda key: attribs_dict[tag_name][key])
-                section_key = max(attribs_dict[tag_name], key=lambda key: attribs_dict[tag_name][key] \
-                          if not section_key == value else OrderedSet())
+                value = max(attribs_dict[tag_name], 
+                            key=lambda key: attribs_dict[tag_name][key])
+                section_key = max(attribs_dict[tag_name], 
+                                  key=lambda key: attribs_dict[tag_name][key] \
+                                  if not section_key == value 
+                                  and not section_key in kwargs['non_section_keys']
+                                  else OrderedSet())
                 section_dict[tag_name] = (section_key, value)
-            print(section_dict)
-            sections.add(attribs_dict[tag_name][section_key])
+#             print(section_dict)
+
+            sections.extend(list(i for i in attribs_dict[tag_name][section_key]))
+    print(sections)
+#     sections = list(sections)
+#     print(sections)
     return section_dict, sections
                 
