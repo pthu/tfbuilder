@@ -70,7 +70,7 @@ def attribClean(elem, lang='generic', **kwargs):
     return tag, attribs
 
 
-def elemParser(elem, lang='generic', **kwargs):
+def elemParser(elem, lang='generic'):
     '''The xmlParser is able to parse the elements
     created by xmlSplitter(xmlfile). It returns a tuple
     containing the type and normalized element: (type, elem)
@@ -113,19 +113,24 @@ def elemParser(elem, lang='generic', **kwargs):
         else:
             code, content = 'text', elem
     return code, content
-    
+
+def dataParser(data, lang='generic'):
+    return [elemParser(elem, lang=lang) for elem in data]
+        
     
 def metadataReader(data, lang='generic', **kwargs):
     """The **kwargs are the 'metadata' field in tf_config.py
-    the **kwargs passed should be langsettings[lang]['metadata'] from tf_config.py"""
+    the **kwargs passed should be langsettings[lang]['metadata'] from tf_config.py
+    
+    data should be produced by dataParser
+    """
     metadata = {}
     READ = False
     CONC = None
     CUR  = None
     tagList = []
-    
-    for elem in data:
-        code, content = elemParser(elem, lang=lang, **error_dict)
+
+    for code, content in data:
 #         print(code, content)
         if code == 'bodyStart':
             body_index = data.index(elem) + 1
