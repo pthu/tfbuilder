@@ -62,6 +62,7 @@ langsettings = {
         'phrase_delimit': {',', ';', ':',},
         'langtool': langtools.Generic,
     },
+    
     'greek': {
         'slot_type': 'word',
         'udnorm': 'NFD',

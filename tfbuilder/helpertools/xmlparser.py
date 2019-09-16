@@ -4,6 +4,7 @@ from pprint import pprint
 from collections import OrderedDict
 from data.attrib_errors import error_dict
 from ordered_set import OrderedSet
+from tf_config import langsettings
 
 # XML RE PATTERNS
 commentFullRE   = re.compile(r'^<!--.*?-->$')
@@ -40,7 +41,7 @@ def xmlSplitter(xmlfile):
     return data
 
 
-def attribClean(elem, lang='generic', **kwargs):
+def attribClean(elem, errors, lang='generic', **kwargs):
     '''attribClean reads an XML tag and processes a 
     thorough normalization on it, consisting of:
     - strip() of whitespace
@@ -62,11 +63,12 @@ def attribClean(elem, lang='generic', **kwargs):
         for elem in elem[elem.find(' '):].split('" ')]}
     # correct any mistakes in the attributes 
     # if 'attrib_errors' is provided in the config.py
-    if lang in kwargs:
-        attribs = {k: (kwargs[lang][v] \
-                           if v in kwargs[lang] \
+    if lang in errors:
+        attribs = {k: (errors[lang][v] \
+                           if v in errors[lang] \
                            else v) \
-                       for k, v in attribs.items()}
+                           for k, v in attribs.items()}
+    attribs = {k: v for k, v in attribs.items() if not k in kwargs[lang]['ignore_attrib_keys']}
     return tag, attribs
 
 
@@ -106,13 +108,14 @@ def elemParser(elem, lang='generic'):
             code, content = 'openCloseTag', elem.strip('<>/ ')
         elif openAttrTagRE.fullmatch(elem):
             code = 'openAttrTag'
-            content = attribClean(elem, lang=lang, **error_dict)
+            content = attribClean(elem, error_dict, lang=lang, **langsettings)
         elif closedAttrTagRE.fullmatch(elem):
             code = 'closedAttrTag'
-            content = attribClean(elem, lang=lang, **error_dict)
+            content = attribClean(elem, error_dict, lang=lang, **langsettings)
         else:
             code, content = 'text', elem
     return code, content
+
 
 def dataParser(data, lang='generic'):
     return [elemParser(elem, lang=lang) for elem in data]
@@ -129,11 +132,10 @@ def metadataReader(data, lang='generic', **kwargs):
     CONC = None
     CUR  = None
     tagList = []
-
     for code, content in data:
 #         print(code, content)
         if code == 'bodyStart':
-            body_index = data.index(elem) + 1
+            body_index = data.index((code, content)) + 1
             break
         elif code == 'text':
             if READ:
@@ -176,43 +178,54 @@ def attribsAnalysis(data, lang='generic', **kwargs):
     attribs_dict = {}
     section_tags = OrderedSet()
     open_section_tags = set()
-    
-    for elem in data:
-        code, content = elemParser(elem, lang=lang, **error_dict)
-        if code in ('openAttrTag', 'closedAttrTag'):
-            tag, attribs = content
-            # The 'startswith' statement is there, because some XML files use 
-            # e.g. div1, div2, div3 as structuring tags.
-            # In this case, kwargs['structure_tag'] = 'div'
-            for sec_tag in kwargs['section_tags']:
-                if tag.startswith(sec_tag):
-                    if kwargs['non_section_keys'] & set(attribs):
-                        tag_name = tuple((tag, tuple(key for key in attribs.keys() \
-                                          if key not in kwargs['ignore_attrib_keys'])))
-                        break
-                    tag = sec_tag
-                    tag_name = tuple((tag, tuple(key for key in attribs.keys() \
-                                      if key not in kwargs['ignore_attrib_keys'])))
-                    section_tags.add(tag_name)
-                    break
-            else:        
-                tag_name = tuple((tag, tuple(key for key in attribs.keys() \
-                                  if key not in kwargs['ignore_attrib_keys'])))
-            if tag_name in attribs_dict:
-                for attrib in attribs:
-                    if attrib in attribs_dict[tag_name]:
-                        attribs_dict[tag_name][attrib].add(attribs[attrib])
-                    else:
-                        attribs_dict[tag_name][attrib] = OrderedSet([attribs[attrib]])
-            else:
-                attribs_dict[tag_name] = {k: OrderedSet([v]) for k, v in attribs.items()}
-            if code == 'openAttrTag' and tag_name in section_tags:
-                open_section_tags.add(tag_name)
+    for code, content in ((c, _) for (c, _) in data if c in ('openAttrTag', 'closedAttrTag')):
+        tag, attribs = content
+        tag_name = (tag, tuple(key for key in attribs.keys()))
+        if tag_name in attribs_dict:
+            attribs_dict[tag_name] = {k: v | {attribs[k]} for k, v in attribs_dict[tag_name].items()}                         
         else:
-            continue
-#     pprint(attribs_dict)
-#     pprint(section_tags)
-#     pprint(open_section_tags)
+            attribs_dict[tag_name] = {key: OrderedSet([val]) for key, val in attribs.items()}
+
+    len_attribs_dict = {key: {k: len(v) for k, v in val.items()} for key, val in attribs_dict.items()}
+    
+    for tag_type, attribs in len_attribs_dict.items():
+        name = ''
+        for i in attribs:
+            if len(i) == 1:
+                
+            
+            
+        
+    
+        # The 'startswith' statement is there, because some XML files use 
+        # e.g. div1, div2, div3 as structuring tags.
+        # In this case, kwargs['structure_tag'] = 'div'
+
+
+#         for sec_tag in kwargs['section_tags']:
+#             if tag.startswith(sec_tag):
+#                 if kwargs['non_section_keys'] & set(attribs):
+#                     tag_name = tuple((tag, tuple(key for key in attribs.keys() \
+#                                       if key not in kwargs['ignore_attrib_keys'])))
+#                     break
+#                 tag = sec_tag
+#                 tag_name = tuple((tag, tuple(key for key in attribs.keys() \
+#                                   if key not in kwargs['ignore_attrib_keys'])))
+#                 section_tags.add(tag_name)
+#                 break
+
+#         else:        
+#             tag_name = tuple((tag, tuple(key for key in attribs.keys() \
+#                               if key not in kwargs['ignore_attrib_keys'])))
+
+
+        
+
+
+
+#         if code == 'openAttrTag' and tag_name in section_tags:
+#             open_section_tags.add(tag_name)
+
     return attribs_dict, section_tags, open_section_tags
     
                                   
@@ -227,8 +240,6 @@ def sectionElems(attribs_dict, section_labels, **kwargs):
     returned by attribsAnalysis() as input and returns the
     sections that most probably define the structure of the XML.
     """
-#     print(attribs_dict)
-    print(section_labels)
     section_dict = {}
     sections = []
     for tag_name in section_labels:
@@ -253,11 +264,6 @@ def sectionElems(attribs_dict, section_labels, **kwargs):
                                   and not section_key in kwargs['non_section_keys']
                                   else OrderedSet())
                 section_dict[tag_name] = (section_key, value)
-#             print(section_dict)
-
             sections.extend(list(i for i in attribs_dict[tag_name][section_key]))
-    print(sections)
-#     sections = list(sections)
-#     print(sections)
     return section_dict, sections
                 
