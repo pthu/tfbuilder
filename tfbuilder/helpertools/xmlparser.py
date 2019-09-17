@@ -53,23 +53,19 @@ def attribClean(elem, errors, lang='generic', **kwargs):
     The function returns a tuple with tag and attribs dict:
     (tag, {keys: values})
     '''
-    # clean the elem
     elem = elem.strip('<>\/ ')
     elem = re.sub(r'\s*=\s*"\s*', '="', elem)
-    # define the tag
     tag = elem[:elem.find(' ')]
-    # convert the attributes to a dict
     attribs = {k.strip(): v.strip('" ') for k, v in [elem.split('="') \
-        for elem in elem[elem.find(' '):].split('" ')]}
-    # correct any mistakes in the attributes 
-    # if 'attrib_errors' is provided in the config.py
+                      for elem in elem[elem.find(' '):].split('" ')]}
     if lang in errors:
         attribs = {k: (errors[lang][v] \
-                           if v in errors[lang] \
-                           else v) \
-                           for k, v in attribs.items()}
-    attribs = {k: v for k, v in attribs.items() if not k in kwargs[lang]['ignore_attrib_keys']}
-    return tag, attribs
+                       if v in errors[lang] else v) \
+                       for k, v in attribs.items()}
+    attribs = {k: v for k, v in attribs.items() \
+                    if not k in kwargs[lang]['ignore_attrib_keys']}
+    tag_name = (tag, tuple(key for key in attribs.keys()))
+    return tag_name, attribs
 
 
 def elemParser(elem, lang='generic'):
@@ -85,7 +81,6 @@ def elemParser(elem, lang='generic'):
       (see attribClean)
     ''' 
     comment = False
-    # Application of patterns:
     if comment:
         if commentStopRE.fullmatch(elem):
             comment = False
@@ -133,7 +128,6 @@ def metadataReader(data, lang='generic', **kwargs):
     CUR  = None
     tagList = []
     for code, content in data:
-#         print(code, content)
         if code == 'bodyStart':
             body_index = data.index((code, content)) + 1
             break
@@ -176,57 +170,42 @@ def metadataReader(data, lang='generic', **kwargs):
 
 def attribsAnalysis(data, lang='generic', **kwargs):
     attribs_dict = {}
-    section_tags = OrderedSet()
-    open_section_tags = set()
+    analyzed_dict = {}
+    sections = []
     for code, content in ((c, _) for (c, _) in data if c in ('openAttrTag', 'closedAttrTag')):
-        tag, attribs = content
-        tag_name = (tag, tuple(key for key in attribs.keys()))
+        tag_name, attribs = content
         if tag_name in attribs_dict:
             attribs_dict[tag_name] = {k: v | {attribs[k]} for k, v in attribs_dict[tag_name].items()}                         
         else:
             attribs_dict[tag_name] = {key: OrderedSet([val]) for key, val in attribs.items()}
-
     len_attribs_dict = {key: {k: len(v) for k, v in val.items()} for key, val in attribs_dict.items()}
     
-    for tag_type, attribs in len_attribs_dict.items():
-        name = ''
-        for i in attribs:
-            if len(i) == 1:
-                
+    for tag_name, attribs in len_attribs_dict.items():
+        #define value keys and feature keys
+        if len(attribs) == 1:
+            analyzed_dict[tag_name] = tuple((''.join(attribs.keys()), 'tag'),)
+        elif len(attribs) >= 2:
+            if 'n' in attribs:
+                value = 'n'
+            else:
+                value = max(attribs, key=attribs.get)
+            feature_name = max(attribs, key=lambda key: attribs[key] if not key == value else False)
+            feature_names = [feature_name]
+            for k in attribs:
+                if not k in (value, feature_name):
+                    if attribs[k] == attribs[feature_name]:
+                        feature_names.append(k)
+            analyzed_dict[tag_name] = tuple((value, tuple(feature_names)),)
             
-            
-        
-    
-        # The 'startswith' statement is there, because some XML files use 
-        # e.g. div1, div2, div3 as structuring tags.
-        # In this case, kwargs['structure_tag'] = 'div'
-
-
-#         for sec_tag in kwargs['section_tags']:
-#             if tag.startswith(sec_tag):
-#                 if kwargs['non_section_keys'] & set(attribs):
-#                     tag_name = tuple((tag, tuple(key for key in attribs.keys() \
-#                                       if key not in kwargs['ignore_attrib_keys'])))
-#                     break
-#                 tag = sec_tag
-#                 tag_name = tuple((tag, tuple(key for key in attribs.keys() \
-#                                   if key not in kwargs['ignore_attrib_keys'])))
-#                 section_tags.add(tag_name)
-#                 break
-
-#         else:        
-#             tag_name = tuple((tag, tuple(key for key in attribs.keys() \
-#                               if key not in kwargs['ignore_attrib_keys'])))
-
-
-        
-
-
-
-#         if code == 'openAttrTag' and tag_name in section_tags:
-#             open_section_tags.add(tag_name)
-
-    return attribs_dict, section_tags, open_section_tags
+        #define sections
+        if tag_name[0].startswith((tuple(kwargs['section_tags']))):
+            if set(tag_name[1]) & kwargs['non_section_keys']:
+                pass
+            else:
+                sections.extend(list(attribs_dict[tag_name][''.join(feature_name)] \
+                                    if not attribs_dict[tag_name][''.join(feature_name)] & \
+                                           kwargs['non_section_values'] else ''))
+    return analyzed_dict, sections
     
                                   
 def lenAttribsDict(dictionary):
