@@ -6,6 +6,7 @@ import pickle
 from data import attrib_errors
 from helpertools.unicodetricks import splitPunc, cleanWords, plainCaps, plainLow
 from helpertools.data.greek_elisions import ELISIONS
+from helpertools.data.greek_crasis import CRASIS
 from cltk.corpus.greek.beta_to_unicode import Replacer
 import betacode.conv
 
@@ -114,14 +115,29 @@ class Generic(object):
 
 class Greek(Generic):
     udnorm = 'NFD'
-    ELISION_norm = {normalize('NFC', k.strip('᾽')): v for k, v in ELISIONS.items()}
+    ELISION_norm = {normalize('NFC', k): v for k, v in ELISIONS.items()}
+    CRASIS_norm = {normalize('NFC', k): v for k, v in CRASIS.items()}
 
     @classmethod
     def replace(cls, token):
         (pre, word, post) = token
         plain_word = plainLow(word)
+        # Handling elided forms
         if normalize('NFC', word) in cls.ELISION_norm:
             return (pre, normalize(cls.udnorm, cls.ELISION_norm[normalize('NFC', word)]), post)
+        elif post.startswith(('᾿', '’', '᾽', "'", 'ʹ')):
+            if normalize('NFC', word + '᾽') in cls.ELISION_norm:
+                return (pre, normalize(cls.udnorm, cls.ELISION_norm[normalize('NFC', word + '᾽')]), post)
+            else:
+                return token
+        elif word.endswith(('᾿', '’', '᾽', "'", 'ʹ')):
+            if normalize('NFC', word[:-1] + '᾽') in cls.ELISION_norm:
+                return (pre, normalize(cls.udnorm, cls.ELISION_norm[normalize('NFC', word[:-1] + '᾽')]), post)
+            else:
+                return token
+        # Handling crasis forms
+        elif normalize('NFC', word) in cls.CRASIS_norm:
+            return (pre, normalize(cls.udnorm, cls.CRASIS_norm[normalize('NFC', word)]), post)
         # Deletion of movable-nu
         elif plain_word.endswith(('εν', 'σιν', 'στιν')) and len(plain_word) >= 3:
             return (pre, word[:-1], post)
