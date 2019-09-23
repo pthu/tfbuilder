@@ -62,9 +62,9 @@ def attribClean(elem, errors, lang='generic', **kwargs):
         attribs = {k: (errors[lang][v] \
                        if v in errors[lang] else v) \
                        for k, v in attribs.items()}
-    attribs = {k: v for k, v in attribs.items() \
-                    if not k in kwargs[lang]['ignore_attrib_keys']}
-    tag_name = (tag, tuple(key for key in attribs.keys()))
+#     attribs = {k: v for k, v in attribs.items() \
+#                     if not k in kwargs[lang]['ignore_attrib_keys']}
+    tag_name = (tag, tuple(key for key in attribs.keys() if not key in kwargs[lang]['ignore_attrib_keys']))
     return tag_name, attribs
 
 
@@ -142,7 +142,7 @@ def metadataReader(data, lang='generic', **kwargs):
                     metadata[tagList[-1]] = content
         elif code in ('openTag', 'openAttrTag'):
             if code == 'openAttrTag':
-                content = content[0]
+                content = content[0][0]
             if CUR:
                 if not CONC:
                     tagList.append(content)
@@ -175,12 +175,14 @@ def attribsAnalysis(data, lang='generic', **kwargs):
     for code, content in ((c, _) for (c, _) in data if c in ('openAttrTag', 'closedAttrTag')):
         tag_name, attribs = content
         if tag_name in attribs_dict:
-            attribs_dict[tag_name] = {k: v | {attribs[k]} for k, v in attribs_dict[tag_name].items()}                         
+            attribs_dict[tag_name] = {k: v | {attribs[k]} if k in attribs else {'',} \
+                                      for k, v in attribs_dict[tag_name].items()}                         
         else:
             attribs_dict[tag_name] = {key: OrderedSet([val]) for key, val in attribs.items()}
-    len_attribs_dict = {key: {k: len(v) for k, v in val.items()} for key, val in attribs_dict.items()}
+#     len_attribs_dict = {key: {k: len(v) for k, v in val.items()} for key, val in attribs_dict.items()}
     
-    for tag_name, attribs in len_attribs_dict.items():
+#     for tag_name, attribs in len_attribs_dict.items():
+    for tag_name, attribs in attribs_dict.items():
         #define value keys and feature keys
         if len(attribs) == 1:
             analyzed_dict[tag_name] = tuple((''.join(attribs.keys()), 'tag'),)
@@ -189,60 +191,83 @@ def attribsAnalysis(data, lang='generic', **kwargs):
                 value = 'n'
             else:
                 value = max(attribs, key=attribs.get)
-            feature_name = max(attribs, key=lambda key: attribs[key] if not key == value else False)
+            feature_name = max(attribs, key=lambda key: len(attribs[key]) \
+                               if not key == value \
+                               or key in kwargs['ignore_attrib_keys'] else False)
             feature_names = [feature_name]
             for k in attribs:
                 if not k in (value, feature_name):
-                    if attribs[k] == attribs[feature_name]:
+                    if len(attribs[k]) == len(attribs[feature_name]) \
+                    and not k in kwargs['ignore_attrib_keys']:
                         feature_names.append(k)
             analyzed_dict[tag_name] = tuple((value, tuple(feature_names)),)
             
         #define sections
         if tag_name[0].startswith((tuple(kwargs['section_tags']))):
-            if set(tag_name[1]) & kwargs['non_section_keys']:
+            section_keys = set(analyzed_dict[tag_name][1]) - kwargs['non_section_keys']
+            if len(section_keys) == 0:
                 pass
+            
+            elif len(section_keys) == 1:
+                if set(attribs[''.join(section_keys)]) & kwargs['non_section_values']:
+                    pass
+                else:
+                    if not 'n' in attribs:
+                        pass
+                    else:
+                        sections.extend(list(attribs[''.join(section_keys)]))
+                        orig_analyzed = analyzed_dict[tag_name]
+                        analyzed_dict[tag_name] = tuple((orig_analyzed[0], tuple(section_keys)),)
             else:
-                sections.extend(list(attribs_dict[tag_name][''.join(feature_name)] \
-                                    if not attribs_dict[tag_name][''.join(feature_name)] & \
-                                           kwargs['non_section_values'] else ''))
+                print('ERROR!')
+                print(section_keys)
+            
+#             print(section_keys)
+#             if len(section_keys) == 1:
+#                 sections.extend(list(attribs_dict[tag_name][''.join(section_keys)] \
+#                                      if not attribs_dict[tag_name][''.join(feature_name)] & \
+#                                      kwargs['non_section_values'] else ''))
+#             else:
+#                 print('ERRORR')
+                
     return analyzed_dict, sections
     
                                   
-def lenAttribsDict(dictionary):
-    """lenAttribsDict measures the length of the values in 
-    attribs_dict returned by attribsDict()"""
-    return {key: {k: len(v) for k, v in val.items()} for key, val in dictionary.items()}
+# def lenAttribsDict(dictionary):
+#     """lenAttribsDict measures the length of the values in 
+#     attribs_dict returned by attribsDict()"""
+#     return {key: {k: len(v) for k, v in val.items()} for key, val in dictionary.items()}
                               
                                   
-def sectionElems(attribs_dict, section_labels, **kwargs):
-    """takes the attribs_dict, and section_tags
-    returned by attribsAnalysis() as input and returns the
-    sections that most probably define the structure of the XML.
-    """
-    section_dict = {}
-    sections = []
-    for tag_name in section_labels:
-        tag, keys = tag_name
-        if len(keys) == 1:
-            section_dict[tag_name] = (tag, keys[0])
-            sections.add(tag)
-        else:
-            if 'n' in attribs_dict[tag_name]:
-                section_key = max(attribs_dict[tag_name], 
-                                  key=lambda key: attribs_dict[tag_name][key] \
-                                  if not key == 'n' 
-                                  and not key in kwargs['non_section_keys']
-                                  else OrderedSet())
-                section_dict[tag_name] = (section_key, 'n')
-            else:
-                value = max(attribs_dict[tag_name], 
-                            key=lambda key: attribs_dict[tag_name][key])
-                section_key = max(attribs_dict[tag_name], 
-                                  key=lambda key: attribs_dict[tag_name][key] \
-                                  if not section_key == value 
-                                  and not section_key in kwargs['non_section_keys']
-                                  else OrderedSet())
-                section_dict[tag_name] = (section_key, value)
-            sections.extend(list(i for i in attribs_dict[tag_name][section_key]))
-    return section_dict, sections
+# def sectionElems(attribs_dict, section_labels, **kwargs):
+#     """takes the attribs_dict, and section_tags
+#     returned by attribsAnalysis() as input and returns the
+#     sections that most probably define the structure of the XML.
+#     """
+#     section_dict = {}
+#     sections = []
+#     for tag_name in section_labels:
+#         tag, keys = tag_name
+#         if len(keys) == 1:
+#             section_dict[tag_name] = (tag, keys[0])
+#             sections.add(tag)
+#         else:
+#             if 'n' in attribs_dict[tag_name]:
+#                 section_key = max(attribs_dict[tag_name], 
+#                                   key=lambda key: attribs_dict[tag_name][key] \
+#                                   if not key == 'n' 
+#                                   and not key in kwargs['non_section_keys']
+#                                   else OrderedSet())
+#                 section_dict[tag_name] = (section_key, 'n')
+#             else:
+#                 value = max(attribs_dict[tag_name], 
+#                             key=lambda key: attribs_dict[tag_name][key])
+#                 section_key = max(attribs_dict[tag_name], 
+#                                   key=lambda key: attribs_dict[tag_name][key] \
+#                                   if not section_key == value 
+#                                   and not section_key in kwargs['non_section_keys']
+#                                   else OrderedSet())
+#                 section_dict[tag_name] = (section_key, value)
+#             sections.extend(list(i for i in attribs_dict[tag_name][section_key]))
+#     return section_dict, sections
                 
