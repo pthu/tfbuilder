@@ -105,7 +105,7 @@ langsettings = {
         
         'dir_struct': [['author', 'editor'], ['title', 'book', 'work'], ['editor']],
         
-        'metadata': {'titleStmt': {'concat': False},
+        'metadata': {'titleStmt': {'concat': False, 'delimit': ', ', 'end': ''},
                      'publicationStmt': {'concat': True, 'delimit': ', ', 'end': '.'},
                      'sourceDesc': {'concat': True, 'delimit': ', ', 'end': '.'},
                      'license': {'concat': True, 'delimit': ', ', 'end': '.'},

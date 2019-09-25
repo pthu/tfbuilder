@@ -35,6 +35,7 @@ def xmlSplitter(xmlfile):
         data = list(filter(clean, 
                   ' '.join([line.strip() for line in xml.readlines()])\
                   .replace('- ', '-')\
+                  .replace(' -', ' - ')\
                   .replace('<', '#!#<')\
                   .replace('>', '>#!#')\
                   .split('#!#')))
@@ -126,6 +127,8 @@ def metadataReader(data, lang='generic', **kwargs):
     READ = False
     CONC = None
     CUR  = None
+    TEMP = [None, None]
+    DELIM = ''
     tagList = []
     for code, content in data:
         if code == 'bodyStart':
@@ -133,43 +136,40 @@ def metadataReader(data, lang='generic', **kwargs):
             break
         elif code == 'text':
             if READ:
-                if CONC:
-                    if CUR in metadata:
-                        metadata[CUR] += kwargs[CUR]['delimit'] + content
-                    else:
-                        metadata[CUR] = content
-                else: #TODO!!!
-#                     if CUR in metadata:
-#                         metadata[tagList[-1]] += kwargs[CUR]['delimit'] + content
-#                     else:
-#                         metadata[tagList[-1]] = content
+                if tagList[-1] in metadata:
+                    metadata[tagList[-1]] += f'{DELIM}{content}'
+                else:
                     metadata[tagList[-1]] = content
         elif code in ('openTag', 'openAttrTag'):
             if code == 'openAttrTag':
                 content = content[0][0]
-            if CUR:
-                if not CONC:
-                    tagList.append(content)
             if content in kwargs:
                 READ = True
                 CONC = kwargs[content]['concat']
+                DELIM = kwargs[content]['delimit']
                 CUR = content
-                if CONC == False:
-                    tagList.append(content)
+                tagList.append(CUR)
+                continue
+            if CONC == False:
+                tagList.append(content)
+            if content.endswith('Stmt'): 
+                TEMP[0] = content
+                TEMP[1] = CONC
+                CONC = True
         elif code == 'closeTag':
             if tagList and content == tagList[-1]:
+                if content == TEMP[0]:
+                    CONC = TEMP[1]
+                    TEMP = [None, None]
                 del tagList[-1]
-            if content in kwargs:
-                READ = False
-                CONC = None
-                CUR = None 
+                if content == CUR:
+                    READ = False
         else:
             continue
     for i in kwargs:
         if 'end' in kwargs[i] and i in metadata:
             if not metadata[i][-1] == kwargs[i]['end']:
                 metadata[i] += kwargs[i]['end']
-    pprint(metadata)
     return body_index, metadata
             
 
