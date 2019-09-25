@@ -47,7 +47,7 @@ langsettings = {
                         },
         'dir_struct': [['author', 'editor'], ['title', 'book', 'work'], ['editor']],
         
-        'metadata': {'titleStmt': {'concat': False},
+        'metadata': {'titleStmt': {'concat': False, 'delimit': ', ', 'end': ''},
                      'publicationStmt': {'concat': True, 'delimit': ', ', 'end': '.'},
                      'sourceDesc': {'concat': True, 'delimit': ', ', 'end': '.'},
                      'license': {'concat': True, 'delimit': ', ', 'end': '.'},
@@ -113,7 +113,7 @@ langsettings = {
                     },
         'section_tags': {'div', 'milestone'},
         'ignore_attrib_keys': {'corresp', 'merge', 'resp'},
-        'non_section_keys': {'altpage', 'altpage1', 'altnumbering', 'altref', 'mspage', 'xml:lang', 'type', 'corresp',},
+        'non_section_keys': {'altpage', 'altpage1', 'altnumbering', 'altref', 'mspage', 'xml:lang', 'corresp', 'type',},
         'non_section_values': {'altpage', 'altpage1', 'altnumbering', 'altref', 'mspage', 'xml:lang', 'edition', 'mignepage', 'stephnumbering', 'vignumbering', 'altnumbering', 'ms', 'textpart', 'altedition',},
         'non_text_tags': {'head': {'behaviour': 'next slots'},
                           'note': {'behaviour': 'previous slots'},
