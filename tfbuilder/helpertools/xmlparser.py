@@ -17,6 +17,7 @@ openAttrTagRE   = re.compile(r'<.+?=.+?[^/] *?>')
 closedAttrTagRE = re.compile(r'<.+?=.+?/ *?>')
 bodyStartRE     = re.compile(r'<body *.*?>')
 bodyStopRE      = re.compile(r'</body *.*?>')
+xmlMetaRE       = re.compile(r'<\?.+\?>')
 
 
 def xmlSplitter(xmlfile):
@@ -54,11 +55,17 @@ def attribClean(elem, errors, lang='generic', **kwargs):
     The function returns a tuple with tag and attribs dict:
     (tag, {keys: values})
     '''
+#     print(elem)
     elem = elem.strip('<>\/ ')
     elem = re.sub(r'\s*=\s*"\s*', '="', elem)
     tag = elem[:elem.find(' ')]
-    attribs = {k.strip(): v.strip('" ') for k, v in [elem.split('="') \
-                      for elem in elem[elem.find(' '):].split('" ')]}
+    try:
+        attribs = {k.strip(): v.strip('" ') for k, v in [elem.split('="') \
+                          for elem in elem[elem.find(' '):].split('" ')]}
+    except ValueError:
+        elem = elem.replace("'", '"')
+        attribs = {k.strip(): v.strip('" ') for k, v in [elem.split('="') \
+                          for elem in elem[elem.find(' '):].split('" ')]}
     if lang in errors:
         attribs = {k: (errors[lang][v] \
                        if v in errors[lang] else v) \
@@ -96,6 +103,8 @@ def elemParser(elem, lang='generic'):
             code, content = 'bodyStart', ''
         elif bodyStopRE.fullmatch(elem):
             code, content = 'bodyStop', ''
+        elif xmlMetaRE.fullmatch(elem):
+            code, content = 'comment', ''
         elif openTagRE.fullmatch(elem):
             code, content = 'openTag', elem.strip('<> ')
         elif closeTagRE.fullmatch(elem):
@@ -135,6 +144,7 @@ def metadataReader(data, lang='generic', **kwargs):
             body_index = data.index((code, content)) + 1
             break
         elif code == 'text':
+            content = content.strip()
             if READ:
                 if tagList[-1] in metadata:
                     metadata[tagList[-1]] += f'{DELIM}{content}'
@@ -210,7 +220,10 @@ def attribsAnalysis(data, lang='generic', **kwargs):
         if tag_name[0].startswith((tuple(kwargs['section_tags']))):
             if analyzed_dict[tag_name][1] == 'tag':
                 continue
-            section_keys = set(analyzed_dict[tag_name][1]) - kwargs['non_section_keys'] - kwargs['ignore_attrib_keys']
+            section_keys = set(analyzed_dict[tag_name][1]) \
+                               - {k for k, v in attribs_dict[tag_name].items() if v & kwargs['non_section_values'] } \
+                               - kwargs['non_section_keys'] \
+                               - kwargs['ignore_attrib_keys']
             if len(section_keys) == 0:
                 pass
             
