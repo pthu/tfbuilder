@@ -23,23 +23,13 @@ xmlMetaRE       = re.compile(r'<\?.+\?>')
 def xmlSplitter(xmlfile):
     '''The xmlReader reads a XML file completely into memory,
     while splitting the text on "<" and ">" into a list.
-    '''
-    def clean(elem):
-        """Deletes empty list elements"""
-        if elem.strip() == '':
-            return False
-        else:
-            return True
-        
+    '''        
     with open(xmlfile) as xml:
-        # the filter function ensures that no empty strings are returned
-        data = list(filter(clean, 
-                  ' '.join([line.strip() for line in xml.readlines()])\
-                  .replace('- ', '-')\
-                  .replace(' -', ' - ')\
-                  .replace('<', '#!#<')\
-                  .replace('>', '>#!#')\
-                  .split('#!#')))
+        data = ''.join([(line.strip() + ' ' if not line.strip().endswith('-') else line.strip()) \
+                        for line in xml.readlines()])\
+                 .replace('<', '#!#<')\
+                 .replace('>', '>#!#')\
+                 .split('#!#')
     return data
 
 
@@ -76,7 +66,7 @@ def attribClean(elem, errors, lang='generic', **kwargs):
     return tag_name, attribs
 
 
-def elemParser(elem, lang='generic'):
+def dataParser(data, lang='generic'):
     '''The xmlParser is able to parse the elements
     created by xmlSplitter(xmlfile). It returns a tuple
     containing the type and normalized element: (type, elem)
@@ -87,43 +77,45 @@ def elemParser(elem, lang='generic'):
         <name attrib1="attribname1" attrib2="attribname2 etc="etc">
     - correction of mistakes in attributes defined in kwargs[lang]
       (see attribClean)
-    ''' 
-    comment = False
-    if comment:
-        if commentStopRE.fullmatch(elem):
-            comment = False
-        code, content = 'comment', ''
-    else:
-        if commentFullRE.fullmatch(elem):
+    '''
+    parsed_data = []
+    comment     = False
+    
+    for elem in data:
+        if comment:
+            if commentStopRE.fullmatch(elem):
+                comment = False
             code, content = 'comment', ''
-        elif commentStartRE.fullmatch(elem):
-            comment = True
-            code, content = 'comment', ''
-        elif bodyStartRE.fullmatch(elem):
-            code, content = 'bodyStart', ''
-        elif bodyStopRE.fullmatch(elem):
-            code, content = 'bodyStop', ''
-        elif xmlMetaRE.fullmatch(elem):
-            code, content = 'comment', ''
-        elif openTagRE.fullmatch(elem):
-            code, content = 'openTag', elem.strip('<> ')
-        elif closeTagRE.fullmatch(elem):
-            code, content = 'closeTag', elem.strip('<>/ ')
-        elif opencloseTagRE.fullmatch(elem):
-            code, content = 'openCloseTag', elem.strip('<>/ ')
-        elif openAttrTagRE.fullmatch(elem):
-            code = 'openAttrTag'
-            content = attribClean(elem, error_dict, lang=lang, **langsettings)
-        elif closedAttrTagRE.fullmatch(elem):
-            code = 'closedAttrTag'
-            content = attribClean(elem, error_dict, lang=lang, **langsettings)
         else:
-            code, content = 'text', elem
-    return code, content
-
-
-def dataParser(data, lang='generic'):
-    return [elemParser(elem, lang=lang) for elem in data]
+            if commentFullRE.fullmatch(elem):
+                code, content = 'comment', ''
+            elif commentStartRE.fullmatch(elem):
+                comment = True
+                code, content = 'comment', ''
+            elif bodyStartRE.fullmatch(elem):
+                code, content = 'bodyStart', ''
+            elif bodyStopRE.fullmatch(elem):
+                code, content = 'bodyStop', ''
+            elif xmlMetaRE.fullmatch(elem):
+                code, content = 'comment', ''
+            elif openTagRE.fullmatch(elem):
+                code, content = 'openTag', elem.strip('<> ')
+            elif closeTagRE.fullmatch(elem):
+                code, content = 'closeTag', elem.strip('<>/ ')
+            elif opencloseTagRE.fullmatch(elem):
+                code, content = 'openCloseTag', elem.strip('<>/ ')
+            elif openAttrTagRE.fullmatch(elem):
+                code = 'openAttrTag'
+                content = attribClean(elem, error_dict, lang=lang, **langsettings)
+            elif closedAttrTagRE.fullmatch(elem):
+                code = 'closedAttrTag'
+                content = attribClean(elem, error_dict, lang=lang, **langsettings)
+            elif elem.strip() == '':
+                code, content = None, elem
+            else:
+                code, content = 'text', elem
+        parsed_data.append((code, content))
+    return parsed_data
         
     
 def metadataReader(data, lang='generic', **kwargs):
@@ -224,6 +216,8 @@ def attribsAnalysis(data, lang='generic', **kwargs):
                                - {k for k, v in attribs_dict[tag_name].items() if v & kwargs['non_section_values'] } \
                                - kwargs['non_section_keys'] \
                                - kwargs['ignore_attrib_keys']
+            if 'subtype' in section_keys:
+                section_keys = {'subtype',}
             if len(section_keys) == 0:
                 pass
             
