@@ -48,7 +48,8 @@ def attribClean(elem, errors, lang='generic', **kwargs):
 #     print(elem)
     elem = elem.strip('<>\/ ')
     elem = re.sub(r'\s*=\s*"\s*', '="', elem)
-    tag = elem[:elem.find(' ')]
+    tag = ''.join([c for c in elem[:elem.find(' ')] if not c.isdigit()])
+    
     try:
         attribs = {k.strip(): v.strip('" ') for k, v in [elem.split('="') \
                           for elem in elem[elem.find(' '):].split('" ')]}
@@ -136,7 +137,12 @@ def metadataReader(data, lang='generic', **kwargs):
             body_index = data.index((code, content)) + 1
             break
         elif code == 'text':
-            content = content.strip()
+            content = content.strip('. ')
+            if tagList and tagList[-1] in {'author', 'editor'}:
+                content = ' '.join((c.title() if not c.lower() in {'of', 'the',} else c.lower()) \
+                                    for c in content.split())
+            else:
+                content = content.strip()
             if READ:
                 if tagList[-1] in metadata:
                     metadata[tagList[-1]] += f'{DELIM}{content}'
@@ -186,41 +192,47 @@ def attribsAnalysis(data, lang='generic', **kwargs):
                                       for k, v in attribs_dict[tag_name].items()}                         
         else:
             attribs_dict[tag_name] = {key: OrderedSet([val]) for key, val in attribs.items()}
-
+#     pprint(attribs_dict)
     for tag_name, attribs in attribs_dict.items():
         #define value keys and feature keys
         if len(attribs) == 1:
             analyzed_dict[tag_name] = tuple((''.join(attribs.keys()), 'tag'),)
         elif len(attribs) >= 2:
+            keyFound = False
             if 'n' in attribs:
                 value = 'n'
             else:
                 value = max(attribs, key=lambda key: len(attribs[key]) \
                                if not key in kwargs['ignore_attrib_keys'] else False)
-            feature_name = max(attribs, key=lambda key: len(attribs[key]) \
+            if set(attribs) & kwargs['section_keys']:
+                feature_names = list((set(attribs) & kwargs['section_keys']),)
+                keyFound = True
+            else:
+                feature_names = list((max(attribs, key=lambda key: len(attribs[key]) \
                                if not key == value \
-                               and not key in kwargs['ignore_attrib_keys'] else False)
-            feature_names = [feature_name]
-            for k in attribs:
-                if not k in (value, feature_name):
-                    if len(attribs[k]) == len(attribs[feature_name]) \
-                    and not k in kwargs['ignore_attrib_keys']:
-                        feature_names.append(k)
+                               and not key in kwargs['ignore_attrib_keys'] else False),))
+            if not keyFound:
+#                 print(f'attribs = {attribs}')
+#                 print(f'feature_names = {feature_names} ')
+                for k in attribs:
+                    for key in feature_names:
+                        if not k in (feature_names + list(value)):
+                            if len(attribs[k]) == len(attribs[key]) \
+                            and not k in kwargs['ignore_attrib_keys']:
+                                feature_names.append(k)
             analyzed_dict[tag_name] = tuple((value, tuple(feature_names)),)
             
         #define sections
-        if tag_name[0].startswith((tuple(kwargs['section_tags']))):
-            if analyzed_dict[tag_name][1] == 'tag':
+        value, feature_keys = analyzed_dict[tag_name]
+        if tag_name[0] in kwargs['section_tags']:
+            if feature_keys == 'tag':
                 continue
-            section_keys = set(analyzed_dict[tag_name][1]) \
+            section_keys = set(feature_keys) \
                                - {k for k, v in attribs_dict[tag_name].items() if v & kwargs['non_section_values'] } \
                                - kwargs['non_section_keys'] \
                                - kwargs['ignore_attrib_keys']
-            if 'subtype' in section_keys:
-                section_keys = {'subtype',}
             if len(section_keys) == 0:
                 pass
-            
             elif len(section_keys) == 1:
                 if set(attribs[''.join(section_keys)]) & kwargs['non_section_values']:
                     pass
