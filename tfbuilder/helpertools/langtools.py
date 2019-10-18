@@ -13,6 +13,8 @@ import betacode.conv
 from unicodedata import normalize
 from greek_normalisation.normalise import Normaliser
 
+beta_to_uni = Replacer()
+
 
 
 class Generic(object):
@@ -200,7 +202,7 @@ class Greek(Generic):
     @classmethod
     def beta2uni(cls, word):
         """Converts betacode to unicode"""
-        beta_to_uni = Replacer()
+#         beta_to_uni = Replacer()
         return normalize(cls.udnorm, beta_to_uni.beta_code(word))
     
     @classmethod
