@@ -1,22 +1,22 @@
-
 # coding: utf-8
 
+# Lemmatizer for Greek text
 # 
-# # Lemmatizer of Greek text
-# 
-# This file provides a function (createLemmatizer) that creates (pickles) a dictionary that contains Greek wordforms as its keys and its possible lemmata as values (set). It also provides a function (lemmatize) that takes two arguments: a wordstring and the just created dictionary of lemmata. It returns a string with the possible lemmata in comma-separated format.
+# This file provides a function (createLemmatizer) 
+# that creates (pickles) a dictionary that contains 
+# Greek wordforms as its keys and its possible lemmata as values (set). 
+# It also provides a function (lemmatize) that takes two arguments: 
+#   - a wordstring 
+#   - and the just created dictionary of lemmata. 
+# It returns a string with the possible lemmata in comma-separated format.
 # 
 # If you like to use these functions, be aware to load the lemmatizer (=lemma dictionary) only once...
-# 
-
 
 import pickle
 from unicodedata import normalize, category
 from os import path
-# from pprint import pprint
 import xml.etree.ElementTree as etree
 from tf.fabric import Timestamp
-# import nbimporter
 
 udnorm = 'NFD'
 
@@ -41,13 +41,14 @@ MANUAL_FORMS = {
     'ἱερουσαλήμ': 'ἱερουσαλήμ',
     'ἔρχεταί': 'ἔρχομαι',
     'ἡσαΐου': 'ἡσαΐου',
-    'ἰσαὰκ': 'ἰσαὰκ'
+    'ἰσαὰκ': 'ἰσαὰκ',
 }
     
-
+# helper function
 def strip_accents(word):
     return ''.join(c for c in normalize(udnorm, word.lower())
                    if category(c)[0] in letter)
+
 
 def createLemmatizer(sourcepath1, sourcepath2):
     lemma_dict = {}
@@ -151,7 +152,7 @@ def createLemmatizer(sourcepath1, sourcepath2):
         pickle.dump(lemma_dict, lemmatizer, protocol=pickle.HIGHEST_PROTOCOL)
     
 # Run the creation process    
-#createLemmatizer(SOURCE1, SOURCE2)
+# createLemmatizer(SOURCE1, SOURCE2)
 
 
 def lemmatize(word, lemmatizer):
