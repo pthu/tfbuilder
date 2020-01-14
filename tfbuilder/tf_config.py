@@ -27,7 +27,14 @@ class Custom(langtools.Generic):
 
 langsettings = {
     'generic': {
+        #TF variables!
         'slot_type': 'word',
+        'intFeatures': set(),
+        'nonIntFeatures': {'otype', 'oslots',},
+        'counter': dict(_sentence=1, _phrase=1),
+        'generic': {},
+        
+        #language variables
         'udnorm': 'NFD',
         'tokenizer': langtools.Generic.splitTokenize,
         'tokenizer_args': {'punc': True, 
@@ -47,7 +54,7 @@ langsettings = {
                         },
         'dir_struct': [['author', 'editor'], ['title', 'book', 'work'], ['editor']],
         
-        'metadata': {'titleStmt': {'concat': False, 'delimit': ', ', 'end': ''},
+        'xmlmetadata': {'titleStmt': {'concat': False, 'delimit': ', ', 'end': ''},
                      'publicationStmt': {'concat': True, 'delimit': ', ', 'end': '.'},
                      'sourceDesc': {'concat': True, 'delimit': ', ', 'end': '.'},
                      'license': {'concat': True, 'delimit': ', ', 'end': '.'},
@@ -105,7 +112,7 @@ langsettings = {
         
         'dir_struct': [['author', 'editor'], ['title', 'book', 'work'], ['editor']],
         
-        'metadata': {'titleStmt': {'concat': False, 'delimit': ', ', 'end': ''},
+        'xmlmetadata': {'titleStmt': {'concat': False, 'delimit': ', ', 'end': ''},
                      'publicationStmt': {'concat': True, 'delimit': ', ', 'end': '.'},
                      'sourceDesc': {'concat': True, 'delimit': ', ', 'end': '.'},
                      'license': {'concat': True, 'delimit': ', ', 'end': '.'},
@@ -171,7 +178,7 @@ langsettings = {
         
         'dir_struct': [['author', 'editor'], ['title', 'book', 'work'], ['editor']],
         
-        'metadata': {'titleStmt': {'concat': False, 'delimit': ', ', 'end': ''},
+        'xmlmetadata': {'titleStmt': {'concat': False, 'delimit': ', ', 'end': ''},
                      'publicationStmt': {'concat': True, 'delimit': ', ', 'end': '.'},
                      'sourceDesc': {'concat': True, 'delimit': ', ', 'end': '.'},
                      'license': {'concat': True, 'delimit': ', ', 'end': '.'},
