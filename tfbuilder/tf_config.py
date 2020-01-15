@@ -31,7 +31,7 @@ langsettings = {
         'slot_type': 'word',
         'intFeatures': set(),
         'nonIntFeatures': {'otype', 'oslots',},
-        'counter': dict(_sentence=1, _phrase=1),
+        'struct_counter': dict(_sentence=1, _phrase=1),
         'generic': {},
         
         #language variables
@@ -68,6 +68,8 @@ langsettings = {
         'sentence_delimit': {'.', '?', '!',},
         'phrase_delimit': {',', ';', ':',},
         'langtool': langtools.Generic,
+        'head_signs': {'start': '{',
+                       'stop': '}',},
     },
     
     'greek': {
