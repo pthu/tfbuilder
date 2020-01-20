@@ -5,8 +5,7 @@
 import pickle
 from data import attrib_errors
 from helpertools.unicodetricks import splitPunc, cleanWords, plainCaps, plainLow
-from helpertools.data.greek_elisions import ELISIONS
-from helpertools.data.greek_crasis import CRASIS
+from helpertools.data.greek import MOVEABLE_NU_ENDINGS, MOVEABLE_NU, ELISION, CRASIS, NOMINASACRA, BIBLICAL_BOOKS
 from cltk.corpus.greek.beta_to_unicode import Replacer
 import betacode.conv
 
@@ -17,7 +16,7 @@ beta_to_uni = Replacer()
 
 
 
-class Generic(object):
+class Generic:
     udnorm = 'NFD'
 
     @classmethod
@@ -119,42 +118,73 @@ class Greek(Generic):
     udnorm = 'NFD'
     ELISION_norm = {normalize('NFC', k): v for k, v in ELISIONS.items()}
     CRASIS_norm = {normalize('NFC', k): v for k, v in CRASIS.items()}
-
+    
+    self.pre_add = None
+    
     @classmethod
     def replace(cls, token):
-        (pre, word, post) = token
+        pre, word, post = token
         plain_word = plainLow(word)
+        
+        # Handle empty tokens that still have data in pre
+        if not plain_word:
+            cls.pre_add = pre
+            return None  
+        if self.pre_add:
+            pre = self.pre_add + pre
+            cls.pre_add = None
+        
         # Handling elided forms
         if normalize('NFC', word) in cls.ELISION_norm:
-            return (pre, normalize(cls.udnorm, cls.ELISION_norm[normalize('NFC', word)]), post)
+            repl_word = normalize(cls.udnorm, cls.ELISION_norm[normalize('NFC', word)])
         elif post.startswith(('᾿', '’', '᾽', "'", 'ʹ')):
             if normalize('NFC', word + '᾽') in cls.ELISION_norm:
-                return (pre, normalize(cls.udnorm, cls.ELISION_norm[normalize('NFC', word + '᾽')]), post)
+                repl_word = normalize(cls.udnorm, cls.ELISION_norm[normalize('NFC', word + '᾽')])
             else:
-                return token
+                repl_word = word
         elif word.endswith(('᾿', '’', '᾽', "'", 'ʹ')):
             if normalize('NFC', word[:-1] + '᾽') in cls.ELISION_norm:
-                return (pre, normalize(cls.udnorm, cls.ELISION_norm[normalize('NFC', word[:-1] + '᾽')]), post)
+                repl_word = normalize(cls.udnorm, cls.ELISION_norm[normalize('NFC', word[:-1] + '᾽')])
             else:
-                return token
+                repl_word = word
         # Handling crasis forms
         elif normalize('NFC', word) in cls.CRASIS_norm:
-            return (pre, normalize(cls.udnorm, cls.CRASIS_norm[normalize('NFC', word)]), post)
+            repl_word = normalize(cls.udnorm, cls.CRASIS_norm[normalize('NFC', word)])
         # Deletion of movable-nu
-        elif plain_word.endswith(('εν', 'σιν', 'στιν')) and len(plain_word) >= 3:
-            return (pre, word[:-1], post)
+        elif plain_word in MOVEABLE_NU:
+            repl_word = word[:-1]
+        elif plain_word[-3:] in MOVEABLE_NU_ENDINGS and len(plain_word) > 3:
+            repl_word = word[:-1]
         # Handling final-sigma
         elif plain_word.endswith('σ'):
-            return (pre, word[:-1] + 'ς', post)
+            repl_word = word[:-1] + 'ς'
         # Handling various forms of ου
         elif plain_word in ('ουχ', 'ουκ'):
-            return (pre, word[:-1], post)
+            repl_word = word[:-1]
         # Handling ἐξ
         elif plain_word == 'εξ':
-            return (pre, word[:-1] + 'κ', post)
+            repl_word = word[:-1] + 'κ'
+        # Handling nomina sacra
+        elif plain_word in NOMINASACRA:
+            repl_word = NOMINASACRA[plain_word]
         else:
-            return token
-
+            repl_word = word
+        
+        if len(repl_word.split(' ')) > 1:
+            repl_word_split = list(enumerate(repl_word.split(' '), start=1))
+            pre_assigned = False
+            result = []
+            for n, w in repl_word_split:
+                if not pre_assigned:
+                    result.append(tuple((pre, w, '')))
+                    pre_assigned = True
+                elif n == len(repl_word_split):
+                    result.append(tuple(('', w, post)))
+                else:
+                    result.append(tuple(('', w, '')))
+            return tuple(result)
+        else:
+            return ((pre, repl_word, post),)
     
     @classmethod
     def jtNormalize(cls, token):
