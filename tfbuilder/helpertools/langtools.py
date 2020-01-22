@@ -21,7 +21,7 @@ class Generic:
 
     @classmethod
     def replace(cls, token):
-        return token
+        return (token,)
     
     @classmethod
     def ltNormalize(cls, string):
@@ -119,7 +119,7 @@ class Greek(Generic):
     ELISION_norm = {normalize('NFC', k): v for k, v in ELISIONS.items()}
     CRASIS_norm = {normalize('NFC', k): v for k, v in CRASIS.items()}
     
-    self.pre_add = None
+#     self.pre_add = None
     
     @classmethod
     def replace(cls, token):
@@ -127,12 +127,12 @@ class Greek(Generic):
         plain_word = plainLow(word)
         
         # Handle empty tokens that still have data in pre
-        if not plain_word:
-            cls.pre_add = pre
-            return None  
-        if self.pre_add:
-            pre = self.pre_add + pre
-            cls.pre_add = None
+#         if not plain_word:
+#             cls.pre_add = pre
+#             return None  
+#         if self.pre_add:
+#             pre = self.pre_add + pre
+#             cls.pre_add = None
         
         # Handling elided forms
         if normalize('NFC', word) in cls.ELISION_norm:

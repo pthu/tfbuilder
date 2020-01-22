@@ -1,6 +1,6 @@
 # Author: Ernst Boogert
 # Institution: Protestant Theological University
-# Date: July 16th, 2019
+# Date: January 21th, 2020
 
 # Remarks:
 # Several functions have originally been written by Dirk Roorda. 
@@ -88,11 +88,20 @@ def splitPunc(words, norm=udnorm, clean=False,
     w = normalize(norm, words)
     pP = 0
     for i in range(len(w)):
-        if category(w[i])[0] not in letter_dia:
+        if category(w[i])[0] in space and pP > 0:
             pP += 1
+            preWord = w[0:pP].strip('\n')
+            if preWord:
+                rest = splitPunc(w[pP:], clean=clean, splitters=splitters, 
+                         non_splitters=non_splitters) if pP < len(w) else ()
+                return ((preWord, '', ''),) + rest
+            else:
+                continue
+        elif category(w[i])[0] not in letter_dia:
+            pP += 1  
         else:
             break
-    preWord = w[0:pP].strip() if pP else ''
+    preWord = w[0:pP].strip('\n') if pP else ''
     pW = pP
     for i in range(pP, len(w)):
         if w[i] in non_splitters:
@@ -104,11 +113,21 @@ def splitPunc(words, norm=udnorm, clean=False,
     word = w[pP:pW]
     pA = pW
     nsplit = False
+    spaceBreak = False
+    sLoc = None
     for i in range(pW, len(w)):
         if clean:
-            if category(w[i])[0] in space:
+            if spaceBreak:
+                if not category(w[i])[0] in letter_dia:
+                    pA += 1
+                    if category(w[i])[0] in space:
+                        sLoc = pA
+                else:
+                    break
+            elif category(w[i])[0] in space:
                 pA += 1
-                break
+                spaceBreak = True
+                sLoc = pA
             elif w[i] in splitters:
                 pA += 1
                 break
@@ -119,9 +138,17 @@ def splitPunc(words, norm=udnorm, clean=False,
             elif category(w[i])[0] not in letter_dia:
                 pA += 1
         else:
-            if category(w[i])[0] in space:
+            if spaceBreak:
+                if not category(w[i])[0] in letter_dia:
+                    pA += 1
+                    if category(w[i])[0] in space:
+                        sLoc = pA
+                else:
+                    break
+            elif category(w[i])[0] in space:
                 pA += 1
-                break
+                spaceBreak = True
+                sLoc = pA
             elif w[i] in non_splitters:
                 nsplit = True
                 continue
@@ -134,9 +161,11 @@ def splitPunc(words, norm=udnorm, clean=False,
                 word += w[i]
             else:
                 break
-    afterWord = w[pW:pA].strip()
-    rest = splitPunc(w[pA:], clean=clean, splitters=splitters, 
-                     non_splitters=non_splitters) if pA < len(w) else ()
+    if not sLoc:
+        sLoc = pA
+    afterWord = w[pW:sLoc].strip('\n')
+    rest = splitPunc(w[sLoc:], clean=clean, splitters=splitters, 
+                     non_splitters=non_splitters) if sLoc < len(w) else ()
     return ((preWord, word, afterWord),) + rest
 
 
