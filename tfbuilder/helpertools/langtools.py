@@ -119,20 +119,18 @@ class Greek(Generic):
     ELISION_norm = {normalize('NFC', k): v for k, v in ELISIONS.items()}
     CRASIS_norm = {normalize('NFC', k): v for k, v in CRASIS.items()}
     
-#     self.pre_add = None
-    
     @classmethod
     def replace(cls, token):
         pre, word, post = token
-        plain_word = plainLow(word)
         
-        # Handle empty tokens that still have data in pre
-#         if not plain_word:
-#             cls.pre_add = pre
-#             return None  
-#         if self.pre_add:
-#             pre = self.pre_add + pre
-#             cls.pre_add = None
+        # If betacode, convert to unicode
+        try:
+            word.encode('ascii')
+            word = normalize(cls.udnorm, betacode.conv.beta_to_uni(word))
+        except UnicodeEncodeError:
+            word = normalize(cls.udnorm, word)
+        
+        plain_word = plainLow(word)
         
         # Handling elided forms
         if normalize('NFC', word) in cls.ELISION_norm:
