@@ -21,6 +21,7 @@ class Generic:
 
     @classmethod
     def replace(cls, token):
+        """NB the replace method should always return a list or tuple in the original token format"""
         return (token,)
     
     @classmethod
@@ -118,6 +119,7 @@ class Greek(Generic):
     udnorm = 'NFD'
     ELISION_norm = {normalize('NFC', k): v for k, v in ELISIONS.items()}
     CRASIS_norm = {normalize('NFC', k): v for k, v in CRASIS.items()}
+    lemmatizer = self.startLemmatizer()
     
     @classmethod
     def replace(cls, token):
@@ -202,19 +204,19 @@ class Greek(Generic):
         lemmatizer_open.close()
         return lemmatizer
     
-    @classmethod #TODO!
-    def lemmatize(cls, word, lemmatizer):
+    @classmethod
+    def lemmatize(cls, word):
         word = normalize('NFD', word.lower())
-        if word in lemmatizer:
-            lemma = normalize(cls.udnorm, ','.join(lemmatizer[word]))
+        if word in cls.lemmatizer:
+            lemma = normalize(cls.udnorm, ','.join(cls.lemmatizer[word]))
         else: 
             word = cls.jtNormalize(('', word, ''))
-            if word in lemmatizer:
-                lemma = normalize(cls.udnorm, ','.join(lemmatizer[word]))
+            if word in cls.lemmatizer:
+                lemma = normalize(cls.udnorm, ','.join(cls.lemmatizer[word]))
             else:
                 word = cls.plainWord(('', word, ''))
-                if word in lemmatizer:
-                    lemma = normalize(cls.udnorm, ','.join(lemmatizer[word]))
+                if word in cls.lemmatizer:
+                    lemma = normalize(cls.udnorm, ','.join(cls.lemmatizer[word]))
                 else:
                     lemma = f'*{normalize(cls.udnorm, word)}'
         return lemma
