@@ -24,6 +24,14 @@ class Custom(langtools.Generic):
     def lemmatize(word):
         return word
 
+generic_metadata = {
+    'convertor execution': 'Ernst Boogert', # Please replace this by your own name!
+    'convertor_author': 'Ernst Boogert',
+    'convertor_date': 'February, 2020',
+    'convertor_institution': 'Protestant Theological University (PThU), Amsterdam/Groningen, The Netherlands',
+    'convertor_version': '1.0.0',
+}
+    
 
 langsettings = {
     'generic': {
@@ -54,11 +62,10 @@ langsettings = {
                            'clean': False,
                            'splitters': None,
                            'non_splitters': ('-', '<'),},
-        'token_out': OrderedDict(['pre': {'text': False, 'metadata': 'interpunction before word'},
-                      'orig': {'text': True, 'metadata': 'the original format of the word without interpunction'},
-                      'post': {'text': False, 'metadata': 'interpunction after word'},
-                     ]),
-        
+        'token_out': OrderedDict([('pre', {'text': False, 'metadata': 'interpunction before word'}),
+                                 ('orig', {'text': True, 'metadata': 'the original format of the word without interpunction'}),
+                                 ('post', {'text': False, 'metadata': 'interpunction after word'}),
+                                 ]),
         #Lemmatizer
         'lemmatizer': None,
         #Text formats
