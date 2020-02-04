@@ -117,9 +117,9 @@ class Generic:
 
 class Greek(Generic):
     udnorm = 'NFD'
-    ELISION_norm = {normalize('NFC', k): v for k, v in ELISIONS.items()}
+    ELISION_norm = {normalize('NFC', k): v for k, v in ELISION.items()}
     CRASIS_norm = {normalize('NFC', k): v for k, v in CRASIS.items()}
-    lemmatizer = self.startLemmatizer()
+#     lemmatizer = startLemmatizer.__func__()
     
     @classmethod
     def replace(cls, token):
@@ -203,6 +203,9 @@ class Greek(Generic):
         lemmatizer = pickle.load(lemmatizer_open)
         lemmatizer_open.close()
         return lemmatizer
+
+    # Start the lemmatizer immediately to be used in the lemmatize() method
+    lemmatizer = startLemmatizer.__func__()
     
     @classmethod
     def lemmatize(cls, word):

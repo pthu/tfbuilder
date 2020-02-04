@@ -48,6 +48,8 @@ langsettings = {
         'intFeatures': set(),
         'nonIntFeatures': {'otype', 'oslots',},
         'struct_counter': dict(_sentence=1, _phrase=1),
+        'struct_counter_metadata': {'_sentence': f"sentences defined by the following delimiters: {{{'.', '?', '!',}}}",
+                                        '_phrase': f"sentences defined by the following delimiters: {{{',', ';', ':',}}}"},
         'generic': {}, # = Metadata used by TF
         
         #LANGUAGE VARIABLES
@@ -113,12 +115,14 @@ langsettings = {
         #Define phrase delimiters to be counted by struct_counter
         'phrase_delimit': {',', ';', ':',},
     },
-    
-    'greek': {**langsettings['generic'], #Inherit all key-value pairs of 'generic'
+
+'greek': {**langsettings['generic'], #Inherit all key-value pairs of 'generic'
         # Replacement and additional settings compared to 'generic'
         'langtool': langtools.Greek,
         'replace_func': langtools.Greek.replace,
         'lemmatizer': langtools.Greek.startLemmatizer,
+        'struct_counter_metadata': {'_sentence': f"sentences defined by the following delimiters: {{{'.', ';',}}}",
+                                        '_phrase': f"sentences defined by the following delimiters: {{{',', '·', '·', ':',}}}"},
         'text_formats': {'fmt:text-orig-full': {'name': 'orig',
                                                 'format': '{pre}{orig}{post}',
                                                 'function': langtools.Greek.origWord,
@@ -167,13 +171,13 @@ langsettings = {
     
     
     
-    'latin': {**langsettings['generic'],
+'latin': {**langsettings['generic'],
         'langtool': langtools.Latin,
     },
     
     
     
-    'custom': {**langsettings['generic'],
+'custom': {**langsettings['generic'],
         'dir_struct': [[],],
         
         #TF variables!
