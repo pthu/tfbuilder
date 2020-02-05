@@ -4,6 +4,12 @@ from data import attrib_errors
 # from .tfbuilder.helpertools import langtools
 # from .tfbuilder.data import attrib_errors
 
+# NB any additional language needs its own dictionary with settings 
+# AND needs to be included in the dict langsettings at the bottom!
+#
+# Any new language can inherit the behaviour of another language by saying:
+# new_lang = {**other_lang, ...new variables that overwrite or add to other_lang...}
+
 class Custom(langtools.Generic):
     def __init__(self, lang='custom'):
         self.lang = lang
@@ -33,8 +39,9 @@ generic_metadata = {
 }
     
 
-langsettings = {
-    'generic': {
+
+
+generic = {
         #OUTPUT DIR STRUCTURE
         #Output dir struct; NB these variable names need to be defined in the metadata!
         #Multiple items in the list define multiple options that will be checked from left to right
@@ -48,8 +55,10 @@ langsettings = {
         'intFeatures': set(),
         'nonIntFeatures': {'otype', 'oslots',},
         'struct_counter': dict(_sentence=1, _phrase=1),
-        'struct_counter_metadata': {'_sentence': f"sentences defined by the following delimiters: {{{'.', '?', '!',}}}",
-                                        '_phrase': f"sentences defined by the following delimiters: {{{',', ';', ':',}}}"},
+        'struct_counter_metadata': {
+            '_sentence': f"sentences defined by the following delimiters: {{{'.', '?', '!',}}}",
+            '_phrase': f"sentences defined by the following delimiters: {{{',', ';', ':',}}}",
+        },
         'generic': {}, # = Metadata used by TF
         
         #LANGUAGE VARIABLES
@@ -64,22 +73,25 @@ langsettings = {
                            'clean': False,
                            'splitters': None,
                            'non_splitters': ('-', '<'),},
-        'token_out': OrderedDict([('pre', {'text': False, 'metadata': 'interpunction before word'}),
-                                 ('orig', {'text': True, 'metadata': 'the original format of the word without interpunction'}),
-                                 ('post', {'text': False, 'metadata': 'interpunction after word'}),
+        'token_out': OrderedDict([('pre', {'text': False, 'description': 'interpunction before word'}),
+                                 ('orig', {'text': True, 'description': 'the original format of the word without interpunction'}),
+                                 ('post', {'text': False, 'description': 'interpunction after word'}),
                                  ]),
         #Lemmatizer
         'lemmatizer': None,
         #Text formats
-        'text_formats': {'fmt:text-orig-orig': {'format': '{pre}{orig}{post} ',
+        'text_formats': {'orig': {'otext_name': 'fmt:text-orig-orig',
+                                  'format': '{pre}{orig}{post}',
                                   'function': langtools.Generic.origWord,
-                                  'metadata': 'original format of the word including punctuation'},
-                         'fmt:text-orig-main': {'format': '{main} ',
+                                  'description': 'original format of the word including punctuation'},
+                         'main': {'otext_name': 'fmt:text-orig-main',
+                                  'format': '{main} ',
                                   'function': langtools.Generic.mainWord,
-                                  'metadata': 'normalized format of the word excluding punctuation'},
-                         'fmt:text-orig-plain': {'format': '{plain} ',
+                                  'description': 'normalized format of the word excluding punctuation'},
+                         'plain': {'otext_name': 'fmt:text-orig-plain',
+                                   'format': '{plain} ',
                                    'function': langtools.Generic.plainWord,
-                                   'metadata': 'plain format in lowercase'},
+                                   'description': 'plain format in lowercase'},
                         },
 
         #XML VARIABLES
@@ -114,39 +126,39 @@ langsettings = {
         'sentence_delimit': {'.', '?', '!',},
         #Define phrase delimiters to be counted by struct_counter
         'phrase_delimit': {',', ';', ':',},
-    },
+}
 
-'greek': {**langsettings['generic'], #Inherit all key-value pairs of 'generic'
+greek = {**generic, #Inherit all key-value pairs of 'generic'
         # Replacement and additional settings compared to 'generic'
         'langtool': langtools.Greek,
         'replace_func': langtools.Greek.replace,
         'lemmatizer': langtools.Greek.startLemmatizer,
         'struct_counter_metadata': {'_sentence': f"sentences defined by the following delimiters: {{{'.', ';',}}}",
                                         '_phrase': f"sentences defined by the following delimiters: {{{',', '·', '·', ':',}}}"},
-        'text_formats': {'fmt:text-orig-full': {'name': 'orig',
-                                                'format': '{pre}{orig}{post}',
-                                                'function': langtools.Greek.origWord,
-                                                'metadata': 'original format of the word including punctuation'},
-                         'fmt:text-orig-main': {'name': 'main',
-                                                'format': '{main} ',
-                                                'function': langtools.Greek.mainWord,
-                                                'metadata': 'normalized format of the word excluding punctuation'},
-                         'fmt:text-orig-norm': {'name': 'norm', 
-                                                'format': '{norm} ',
-                                                'function': langtools.Greek.normWord,
-                                                'metadata': 'normalized format (James Tauber) of the word excluding punctuation'},
-                         'fmt:text-orig-plain': {'name': 'plain',
-                                                'format': '{plain} ',
-                                                'function': langtools.Greek.plainWord,
-                                                'metadata': 'plain format in lowercase'},
-                         'fmt:text-orig-beta_plain': {'name': 'beta_plain',
-                                                'format': '{beta_plain} ',
-                                                'function': langtools.Greek.betaPlainWord,
-                                                'metadata': 'plain format in lowercase betacode (=Greek in Roman characters)'},
-                         'fmt:text-orig-lemma': {'name': 'lemma',
-                                                'format': '{lemma} ',
-                                                'function': langtools.Greek.lemmaWord,
-                                                'metadata': 'possible lemmata of the original words'},
+        'text_formats': {'orig': {'otext_name': 'fmt:text-orig-full',
+                                  'format': '{pre}{orig}{post}',
+                                  'function': langtools.Greek.origWord,
+                                  'description': 'original format of the word including punctuation'},
+                         'main': {'otext_name': 'fmt:text-orig-main',
+                                  'format': '{main} ',
+                                  'function': langtools.Greek.mainWord,
+                                  'description': 'normalized format of the word excluding punctuation'},
+                         'norm': {'otext_name': 'fmt:text-orig-norm', 
+                                  'format': '{norm} ',
+                                  'function': langtools.Greek.normWord,
+                                  'description': 'normalized format (James Tauber) of the word excluding punctuation'},
+                         'plain': {'otext_name': 'fmt:text-orig-plain',
+                                   'format': '{plain} ',
+                                   'function': langtools.Greek.plainWord,
+                                   'description': 'plain format in lowercase'},
+                         'beta_plain': {'otext_name': 'fmt:text-orig-beta_plain',
+                                        'format': '{beta_plain} ',
+                                        'function': langtools.Greek.betaPlainWord,
+                                        'description': 'plain format in lowercase betacode (=Greek in Roman characters)'},
+                         'lemma': {'otext_name': 'fmt:text-orig-lemma',
+                                   'format': '{lemma} ',
+                                   'function': langtools.Greek.lemmaWord,
+                                   'description': 'possible lemmata of the original words'},
                         },
         #XML settings
         'section_tags': {'div', 'milestone', 'state',},
@@ -167,17 +179,17 @@ langsettings = {
         'feature_attribs': {'corresp', 'source'},
         'sentence_delimit': {'.', ';',},
         'phrase_delimit': {',', '·', '·', ':',},
-    },
+}
     
     
     
-'latin': {**langsettings['generic'],
+latin = {**generic,
         'langtool': langtools.Latin,
-    },
+}
     
     
     
-'custom': {**langsettings['generic'],
+custom = {**generic,
         'dir_struct': [[],],
         
         #TF variables!
@@ -233,6 +245,12 @@ langsettings = {
         'sentence_delimit': set(),
         #Define phrase delimiters to be counted by struct_counter
         'phrase_delimit': set(),
-    },
 }
 
+# Add any language to be made available to langsettings!
+langsettings = {
+    'generic': generic,
+    'greek':   greek,
+    'latin':   latin,
+    'custom':  custom,
+    }

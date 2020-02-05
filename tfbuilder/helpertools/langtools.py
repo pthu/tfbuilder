@@ -199,6 +199,7 @@ class Greek(Generic):
     def startLemmatizer():
         """The lemmatizer contains only NFD formatted data
         """
+#         lemmatizer = {0:0} # dummy
         lemmatizer_open = open('data/lemmatizer.pickle', 'rb')
         lemmatizer = pickle.load(lemmatizer_open)
         lemmatizer_open.close()
@@ -268,12 +269,12 @@ class Greek(Generic):
             return cls.uni2betaPlain(token)
     
     @classmethod
-    def lemmaWord(cls, token, lemmatizer, split=True):
+    def lemmaWord(cls, token, split=True):
         if split:
             pre, word, post = token
-            return cls.lemmatize(word, lemmatizer)
+            return cls.lemmatize(word)
         else:
-            return cls.lemmatize(token, lemmatizer)
+            return cls.lemmatize(token)
                       
 class Latin(Generic):
     udnorm = 'NFD'
