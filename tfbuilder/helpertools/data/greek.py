@@ -3,6 +3,7 @@
 
 # Moveable nu
 
+# Unreliable! Cannot be used as such!
 MOVEABLE_NU_ENDINGS = {
  'βεν',
  'γεν',
@@ -29,6 +30,7 @@ MOVEABLE_NU_ENDINGS = {
  'ψεν',
 }
 
+# Limited to Bible!
 MOVEABLE_NU = {
  'αγαπωσιν': 'αγαπωσι',
  'αγγαρευουσιν': 'αγγαρευουσι',

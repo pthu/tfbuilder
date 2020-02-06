@@ -88,17 +88,17 @@ class Generic:
     
     @classmethod
     def mainWord(cls, token, split=True, clean=True, splitters=None, non_splitters=('-',)):
-        """returns the original word,
+        """returns the lowered original word,
         but stripped of punctuation
         before, inbetween and after with
         normalized accentuation
         """
         if split:
             pre, word, post = token
-            return normalize(cls.udnorm, word)
+            return normalize(cls.udnorm, word.lower())
         else:
             return cleanWords(token, norm=cls.udnorm, clean=clean, split=split,
-                              splitters=splitters, non_splitters=non_splitters)
+                              splitters=splitters, non_splitters=non_splitters).lower()
     
     @staticmethod
     def plainWord(token, split=True, caps=False):
@@ -153,8 +153,9 @@ class Greek(Generic):
         # Deletion of movable-nu
         elif plain_word in MOVEABLE_NU:
             repl_word = word[:-1]
-        elif plain_word[-3:] in MOVEABLE_NU_ENDINGS and len(plain_word) > 3:
-            repl_word = word[:-1]
+        # Next is unreliable!
+#         elif plain_word[-3:] in MOVEABLE_NU_ENDINGS and len(plain_word) > 3:
+#             repl_word = word[:-1]
         # Handling final-sigma
         elif plain_word.endswith('σ'):
             repl_word = word[:-1] + 'ς'
@@ -176,12 +177,12 @@ class Greek(Generic):
             result = []
             for n, w in repl_word_split:
                 if not pre_assigned:
-                    result.append(tuple((pre, w, '')))
+                    result.append(tuple((pre, w, ' ')))
                     pre_assigned = True
                 elif n == len(repl_word_split):
                     result.append(tuple(('', w, post)))
                 else:
-                    result.append(tuple(('', w, '')))
+                    result.append(tuple(('', w, ' ')))
             return tuple(result)
         else:
             return ((pre, repl_word, post),)
@@ -200,6 +201,8 @@ class Greek(Generic):
         """The lemmatizer contains only NFD formatted data
         """
 #         lemmatizer = {0:0} # dummy
+        print('    |  loading lemmatizer...')
+        print('    |  ...')
         lemmatizer_open = open('data/lemmatizer.pickle', 'rb')
         lemmatizer = pickle.load(lemmatizer_open)
         lemmatizer_open.close()

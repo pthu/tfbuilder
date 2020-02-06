@@ -31,7 +31,7 @@ class Custom(langtools.Generic):
         return word
 
 generic_metadata = {
-    'convertor execution': 'Ernst Boogert', # Please replace this by your own name!
+    'convertor_execution': 'Ernst Boogert', # Please replace this by your own name!
     'convertor_author': 'Ernst Boogert',
     'convertor_date': 'February, 2020',
     'convertor_institution': 'Protestant Theological University (PThU), Amsterdam/Groningen, The Netherlands',
@@ -53,8 +53,8 @@ generic = {
         #TF variables!
         'slot_type': 'word',
         'intFeatures': set(),
-        'nonIntFeatures': {'otype', 'oslots',},
-        'struct_counter': dict(_sentence=1, _phrase=1),
+        'nonIntFeatures': {'otype', 'oslots', 'otext'},
+        'struct_counter': OrderedDict([('_sentence', 1), ('_phrase', 1)]),
         'struct_counter_metadata': {
             '_sentence': f"sentences defined by the following delimiters: {{{'.', '?', '!',}}}",
             '_phrase': f"sentences defined by the following delimiters: {{{',', ';', ':',}}}",
