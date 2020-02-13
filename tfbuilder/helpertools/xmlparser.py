@@ -121,17 +121,18 @@ def dataParser(data, lang='generic'):
     
 def metadataReader(data, lang='generic', **kwargs):
     """The **kwargs are the 'metadata' field in tf_config.py
-    the **kwargs passed should be langsettings[lang]['metadata'] from tf_config.py
+    the **kwargs passed should be langsettings[lang]['xmlmetadata'] from tf_config.py
     
     data should be produced by dataParser
     """
-    metadata = {}
-    READ = False
-    CONC = None
-    CUR  = None
-    TEMP = [None, None]
-    DELIM = ''
-    tagList = []
+    metadata   = {}
+    body_index = False
+    READ       = False
+    CONC       = None
+    CUR        = None
+    TEMP       = [None, None]
+    DELIM      = ''
+    tagList    = []
     for code, content in data:
         if code == 'bodyStart':
             body_index = data.index((code, content)) + 1
@@ -178,10 +179,11 @@ def metadataReader(data, lang='generic', **kwargs):
         if 'end' in kwargs[i] and i in metadata:
             if not metadata[i][-1] == kwargs[i]['end']:
                 metadata[i] += kwargs[i]['end']
+    
     return body_index, metadata
             
 
-def attribsAnalysis(data, lang='generic', **kwargs):
+def attribsAnalysis(data, **kwargs):
     attribs_dict = {}
     analyzed_dict = {}
     sections = []
