@@ -30,6 +30,6 @@
 @work=Paedagogus
 @xmt=Cod
 @writtenBy=Text-Fabric
-@dateWritten=2020-02-13T10:55:41Z
+@dateWritten=2020-02-13T12:16:14Z
 
-7	1
+5	0

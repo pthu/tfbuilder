@@ -29,8 +29,12 @@
 @work=Paedagogus
 @xmt=Cod
 @writtenBy=Text-Fabric
-@dateWritten=2020-02-13T10:40:05Z
+@dateWritten=2020-02-13T12:13:27Z
 
-3	1-2
-1-2
-1-2
+2	1
+1
+1
+1
+1
+1
+1

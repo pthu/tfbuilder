@@ -29,9 +29,13 @@
 @work=Paedagogus
 @xmt=Cod
 @writtenBy=Text-Fabric
-@dateWritten=2020-02-13T10:40:05Z
+@dateWritten=2020-02-13T12:13:27Z
 
-1-2	word
-3	_book
-4	_phrase
-5	_sentence
+word
+2	_book
+3	_phrase
+4	_sentence
+5	chapter
+6	head
+7	line
+8	section

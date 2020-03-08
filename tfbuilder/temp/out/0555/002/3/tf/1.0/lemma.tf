@@ -8,7 +8,6 @@
 @convertor_execution=Ernst Boogert
 @convertor_institution=Protestant Theological University (PThU), Amsterdam/Groningen, The Netherlands
 @convertor_version=1.0.0
-@coverage_ratio=50.0%
 @date=A.D. 2-3
 @description=possible lemmata of the original words
 @editor=Matray, C.
@@ -31,7 +30,6 @@
 @work=Paedagogus
 @xmt=Cod
 @writtenBy=Text-Fabric
-@dateWritten=2020-02-13T10:41:55Z
+@dateWritten=2020-02-13T13:07:03Z
 
-*ττ
-τις,σύ,τίς,τε
+

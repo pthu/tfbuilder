@@ -9,7 +9,7 @@
 @convertor_institution=Protestant Theological University (PThU), Amsterdam/Groningen, The Netherlands
 @convertor_version=1.0.0
 @date=A.D. 2-3
-@description=normalized format of the word excluding punctuation
+@description=structure feature of the 1st level
 @editor=Matray, C.
 @epithet=Theol.
 @geography=Alexandrinus
@@ -25,14 +25,11 @@
 @title_full=Paedagogus, ed. H.-I. Marrou, M. Harl, C. Mondésert and C. Matray, Clément d'Alexandrie. Le pédagogue, 3 vols. [Sources chrétiennes 70, 108, 158. Paris: Cerf, 1:1960; 2:1965; 3:1970]: 1:108-294; 2:10-242; 3:12-190. *Lib. 1, ed. Marrou and Harl. *Lib. 2, ed. Mondésert and Marrou. *Lib. 3, ed. Mondésert, Matray, and Marrou. (Cod: 57,864: Phil., Theol.)
 @tlg_wordcount=57,864
 @type=Book in series
-@valueType=str
+@valueType=int
 @vid=Scholia: Cf. SCHOLIA IN CLEMENTEM ALEXANDRINUM (5048)
 @work=Paedagogus
 @xmt=Cod
 @writtenBy=Text-Fabric
-@dateWritten=2020-02-13T10:48:42Z
+@dateWritten=2020-02-13T13:07:03Z
 
-τ
-τ
-τ
-τ
+5	0

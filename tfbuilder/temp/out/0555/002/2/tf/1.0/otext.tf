@@ -23,12 +23,12 @@
 @place=Paris
 @publication_year=1:1960; 2:1965; 3:1970
 @publisher=Cerf
-@sectionFeatures=
-@sectionTypes=
+@sectionFeatures=chapter,section,line
+@sectionTypes=chapter,section,line
 @ser=Sources chrétiennes 70, 108, 158
 @srt=Clemens 03
-@structureFeatures=_book,_sentence,_phrase
-@structureTypes=_book,_sentence,_phrase
+@structureFeatures=_book,chapter,section,line,_sentence,_phrase
+@structureTypes=_book,chapter,section,line,_sentence,_phrase
 @tit=CléMent D'Alexandrie. Le PéDagogue, 3 Vols.
 @title=Paedagogus
 @title_full=Paedagogus, ed. H.-I. Marrou, M. Harl, C. Mondésert and C. Matray, Clément d'Alexandrie. Le pédagogue, 3 vols. [Sources chrétiennes 70, 108, 158. Paris: Cerf, 1:1960; 2:1965; 3:1970]: 1:108-294; 2:10-242; 3:12-190. *Lib. 1, ed. Marrou and Harl. *Lib. 2, ed. Mondésert and Marrou. *Lib. 3, ed. Mondésert, Matray, and Marrou. (Cod: 57,864: Phil., Theol.)
@@ -39,5 +39,5 @@
 @work=Paedagogus
 @xmt=Cod
 @writtenBy=Text-Fabric
-@dateWritten=2020-02-13T10:41:37Z
+@dateWritten=2020-02-13T12:16:14Z
 

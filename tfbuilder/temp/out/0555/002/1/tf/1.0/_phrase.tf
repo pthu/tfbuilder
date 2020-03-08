@@ -9,7 +9,7 @@
 @convertor_institution=Protestant Theological University (PThU), Amsterdam/Groningen, The Netherlands
 @convertor_version=1.0.0
 @date=A.D. 2-3
-@description=structure feature of the 2nd level
+@description=structure feature of the 5th level
 @editor=Matray, C.
 @epithet=Theol.
 @geography=Alexandrinus
@@ -30,6 +30,6 @@
 @work=Paedagogus
 @xmt=Cod
 @writtenBy=Text-Fabric
-@dateWritten=2020-02-13T10:40:05Z
+@dateWritten=2020-02-13T12:13:27Z
 
-4	1
+3	1
