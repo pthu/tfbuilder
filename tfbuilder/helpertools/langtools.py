@@ -263,8 +263,7 @@ class Greek(Generic):
             # Handling nomina sacra
             # NB the check for nomina sacra expects the form to be unaccented!
             elif w in NOMINASACRA:
-                w = NOMINASACRA[w_plain]
-
+                w = NOMINASACRA[w]
             # The next fase is that of accentuating unaccentuated words
             # NB any possible ','-separated value is anyway accentuated
             word_set = set()

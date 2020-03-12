@@ -131,8 +131,9 @@ class Conversion:
 
 
 class Csv2tf(Conversion):
-    def __init__(self, data, **kwargs):
+    def __init__(self, data, first_line=None, **kwargs):
         super().__init__(data, **kwargs)
+        self.first_line = first_line
         self.head = self.get_header(self.header)
         self.sections = self.head[:-1] if self.header == True \
             else (list(filter(None, self.generic['citation_scheme'].lower().split('/')))
@@ -170,22 +171,20 @@ class Csv2tf(Conversion):
                 # Recursive loop till the length of the header is correct...
                 check_header(measure, typed_input)
 
-        levels = len(self.data[0].split('\t'))
+        # levels = len(self.data[0].split('\t'))
+        first_line = self.first_line
+        levels = len(first_line)
+
         if head == False:
-            levels = len(self.data[0].split('\t'))
-            if levels == 0:
-                header = []
-            else:
-                header = check_header(levels, list(filter(None, input(
-                    "No header data could be found; please enter an appropriate header: ").split())))
+            header = check_header(levels, list(filter(None, input(
+                f"No header data could be found; please enter an appropriate header...\nThe first line is: '{first_line}'\n").split())))
         else:
             if isinstance(head, (list, tuple)):
                 header = check_header(levels, head)
             elif self.header == True:
-                header = self.data[0].split('\t')
-                self.data = self.data[1:]
-                levels = len(self.data[0].split('\t'))
-                header = check_header(levels, header)
+                header = next(self.data)
+                # levels = len(self.data[0].split('\t'))
+                # header = check_header(levels, header)
             else:
                 print("something is wrong with the header...!")
         return [h.lower() for h in header]
@@ -222,12 +221,11 @@ class Csv2tf(Conversion):
 
         # PROCESS CSV-DATA LINE BY LINE
         # TODO! To be updated to the csv library
-        for line in self.data:
+        for row in self.data:
             #             refAssigned = False
             # Split reference and text; NB text is always the last element!
-            splitline = line.split('\t')
-            ref = splitline[:-1]
-            text = splitline[-1].strip()
+            ref = row[:-1]
+            text = row[-1].strip()
             if not text.endswith(self.tokenizer_args['non_splitters']):
                 text += ' '
 
@@ -738,6 +736,7 @@ class Xml2tf(Conversion):
 def convert(
         input_path,
         output_path,
+        file_elem='',
         tlg_out=False,
         ignore_empty=True,              # Ignore files that don't produce slots
         generic=generic_metadata,  # Generic metadata from tf_config
@@ -781,8 +780,14 @@ def convert(
         kwargs['lemmatizer'] = langsettings['greek']['slemmatizer']()
 
     # input-output file management
-    inpath = path.expanduser(input_path)
-    outpath = path.expanduser(output_path)
+    if input_path.startswith('~'):
+        inpath = path.expanduser(input_path)
+    else:
+        inpath = input_path
+    if output_path.startswith('~'):
+        outpath = path.expanduser(output_path)
+    else:
+        outpath = output_path
 
     # Necessary to make process_file picklable for multiprocessing
     global process_file
@@ -790,27 +795,29 @@ def convert(
     def process_file(file):
         nonlocal count1
         nonlocal count2
-#         nonlocal header
+        nonlocal header
 #         nonlocal silent
-        if file.endswith('.csv'):
+        if file.endswith('.csv') or file.endswith('.tsv'):
             count1 += 1
             tm.info(f'parsing {file}')
             filename = path.splitext(file)[0].split('/')[-1]
 
-# TODO: change to csv library
-#             with open(file, newline='') as csvfile:
-#                 dialect = csv.Sniffer().sniff(csvfile.read(1024))
-#                 if header == None:
-#                     try:
-#                         header = csv.Sniffer().has_header(csvfile.read(2048))
-#                         csvfile.seek(0)
-#                     except:
-#                         header = False
-#                     print(header)
-#                 data = csv.reader(csvfile, dialect)
+            # Create csv-object that tests for header and dialect
+            sniffer = csv.Sniffer()
+            with open(file, newline='') as csvfile:
+                test_piece = csvfile.read(1024)
+                # Reset the cursor at starting position after read()
+                csvfile.seek(0)
+                # Define dialect
+                dialect = sniffer.sniff(test_piece)
+                # Automatically define the presence of a header, if header == None
+                if header == None:
+                    header = sniffer.has_header(test_piece)
+                data = csv.reader(csvfile, dialect)
+                first_line = next(data)
+                csvfile.seek(0)
 
-            with open(file, 'r') as file_open:
-                data = file_open.readlines()
+                # Inject metadata
                 metadata = tlge_metadata[filename]
                 kwargs['generic'].update(tlge_metadata[filename])
 
@@ -846,7 +853,7 @@ def convert(
                 cv = CV(TF, silent=silent)
                 # initiating the Conversion class that provides all
                 # necessary data and methods for cv.walk()
-                x = Csv2tf(data, **kwargs)
+                x = Csv2tf(data, first_line=first_line, **kwargs)
                 # running cv.walk() to generate the tf-files
                 good = cv.walk(
                     x.director,
@@ -935,7 +942,8 @@ def convert(
                     '   |    Unfortunately, conversion of {file.split("/")[-1]} was not successful...\n')
 
     # Define list of files to be processed
-    file_list = glob(f'{inpath}/**/*grc*.*', recursive=True)
+    file_list = glob(f'{inpath}/**/*{file_elem}*.*', recursive=True)
+    # print(file_list)
 
     if multiprocessing:
         if not type(multiprocessing) == bool:
