@@ -737,6 +737,7 @@ def convert(
         input_path,
         output_path,
         file_elem='',
+        csv_delimiter=',',
         tlg_out=False,
         ignore_empty=True,              # Ignore files that don't produce slots
         generic=generic_metadata,  # Generic metadata from tf_config
@@ -813,7 +814,7 @@ def convert(
                 # Automatically define the presence of a header, if header == None
                 if header == None:
                     header = sniffer.has_header(test_piece)
-                data = csv.reader(csvfile, dialect)
+                data = csv.reader(csvfile, dialect, delimiter=csv_delimiter)
                 first_line = next(data)
                 csvfile.seek(0)
 
@@ -841,6 +842,9 @@ def convert(
                 # in case of multiple editions of the same work, a number will be prefixed
                 C = 1
                 if path.isdir(f'{outpath}/{"/".join(dirs)}/{C}/tf/{version}'):
+                    # Pass if dir already exists --> temporary solution!!!
+                    return False
+
                     while path.isdir(f'{outpath}/{"/".join(dirs)}/{C}/tf/{version}'):
                         C += 1
                     else:

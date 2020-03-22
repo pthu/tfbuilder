@@ -249,10 +249,12 @@ class Greek(Generic):
     #             repl_word = word[:-1]
 
             # Handling sigma's
-            if 'ϲ' in w:
-                w = ''.join((c if not c == 'ϲ' else 'σ' for c in w))
+            w = ''.join((c if not c == 'ϲ' else 'σ' for c in w))
             if w.endswith('σ'):
                 w = w[:-1] + 'ς'
+
+            # Handling nu sign '¯'
+            w = ''.join((n if not n == '¯' else 'ν' for n in w))
 
             # Handling various forms of ου
             if w_plain in ('ουχ', 'ουκ'):
