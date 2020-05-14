@@ -17,7 +17,7 @@ from cltk.corpus.greek.beta_to_unicode import Replacer
 from greek_normalisation.normalise import Normaliser
 from greek_accentuation.syllabify import syllabify
 from greek_accentuation.syllabify import add_necessary_breathing
-from greek_accentuation.accentuation import possible_accentuations, add_accentuation
+from greek_accentuation.accentuation import possible_accentuations, add_accent
 
 beta_to_uni = Replacer()
 
@@ -138,99 +138,125 @@ class Generic:
 
 
 class Greek(Generic):
-    # NB all functions in Greek work internally with the NFD norm, however, when called, it is converted to the configured Unicode norm
+    # NB all functions in Greek work internally with the NFD norm, 
+    # however, when called, it is converted to the configured Unicode norm
     udnorm = 'NFD'
+    
+    # Define elision abbreviation signs
+    ELISION_signs = {'᾿', '᾽', "'", 'ʼ', 'ʹ', '’'}
+    ELISION_replacement = '᾽'
+    
+    # Make the ELISION dictionary conform the udnorm
     ELISION_norm = {normalize('NFD', k): normalize('NFD', v)
                     for k, v in ELISION.items()}
     CRASIS_norm = {normalize('NFD', k): normalize('NFD', v)
                    for k, v in CRASIS.items()}
 
+    # Create the ELISION dictionary with plain forms
+    # NB plain forms usually delete the abbreviation sign,
+    # so we need to take care of that...
     ELISION_plain = {}
     for k, v in ELISION_norm.items():
-        if plainLow(k) + '᾽' not in ELISION_plain:
-            ELISION_plain[plainLow(k) + '᾽'] = {v}
+        key = ''.join([plainLow(c) if not c == '᾽' else '᾽' for c in k])
+        if not key in ELISION_plain:
+            ELISION_plain[key] = {v}
         else:
             # NB This might result in multiple ','-separated wordforms!
-            ELISION_plain[plainLow(k) + '᾽'].add(v)
-            # ELISION_plain[plainLow(k) + '᾽'] = f"{ELISION_plain[plainLow(k) + '᾽']},{v}"
+            ELISION_plain[key].add(v)
     # The value sets make sure that only unique forms are saved; however, they need to be converted to string
     ELISION_plain = {k: ','.join(v) for k, v in ELISION_plain.items()}
+    
 
     @classmethod
     def replace(cls, token):
         pre, word, post = token
         # Convert to Unicode anyway, because sometimes there is Latin characters in Greek words
         # We also bring the Unicode type into concord with the norm: 'NFD'
-        word = normalize(cls.udnorm, beta_to_uni.beta_code(word).lower())
-        plain_word = plainLow(word)
-        ELISION_signs = ('᾿', '᾽', "'", 'ʼ', 'ʹ', '’')
+        # and we replace abbreviation signs with the appropriate one.
+        word = ''.join([c if not c in cls.ELISION_signs else cls.ELISION_replacement \
+                        for c in normalize(cls.udnorm, beta_to_uni.beta_code(word).lower())])
+        
+        # Make a plain version while keeping the ELISION replacement
+        plain_word = ''.join([plainLow(c) if not c == cls.ELISION_replacement else cls.ELISION_replacement for c in word])
+        
+        # Do a pre-check to decide whether it is probably a case of elisis or not to speed up!
+        # This does not work for unaccented transcriptions of manuscripts
+#         if not    set(post) && ELISION_signs \
+#           and not set(word) && ELISION_signs \
+#           and not set(pre) && ELISION_signs:
+#             pass
 
+        ###########
+        # ELISION #
+        ###########
         # In handling elided forms, we need to take into account several things:
-        # 1) the abbreviation sign can be part of 'pre', 'word', or 'post' depending on which sign has been used.
+        # 1) the abbreviation sign can be part of 'pre', 'word', or 'post' depending on its unicodedata category
         # 2) the signs need to be replaced by the one used in the matching dictionary
         # 3) we are not entirely sure that the source texts are accentuated correctly
+        # 4) sometimes (especially in manuscript transcriptions) there are elided forms without abbreviation sign
+        # 5) if the abbreviation sign lives in the pre and/or post feauture, it needs to be replaced too
 
-        # First, check whether the last/first character of the word is an abbreviation sign and replace it if True
-        if word[-1] in ELISION_signs:
-            word = word[:-1] + '᾽'
-        if word[0] in ELISION_signs:
-            word = '᾽' + word[1:]
-        if plain_word[-1] in ELISION_signs:
-            plain_word = plain_word[:-1] + '᾽'
-        if plain_word[0] in ELISION_signs:
-            plain_word = '᾽' + plain_word[1:]
-
-        # We then check whether the accented form appears in ELISION_norm
-        # ONLY IF IT DOESN'T, we check whether the plain form appears in ELISION_plain
-
-        # Check whether the word is in  ELISION_norm
-        if word in cls.ELISION_norm:
-            word = cls.ELISION_norm[word]
-        # Check whether the abbreviation sign resides in the 'pre' or 'post' parts
-        elif post.startswith(ELISION_signs):
-            if pre.endswith(ELISION_signs):
-                if f'᾽{word}᾽' in cls.ELISION_norm:
-                    word = cls.ELISION_norm[f'᾽{word}᾽']
-                    pre, post = pre[:-1], post[1:]
+        # In the following checks, we expect the abbreviation sign to live in the pre and/or post feature
+        # more easily than being part of the word itself.
+        
+        # Further, these checks have a huge bearing on performance since most of the words are not elided forms,
+        # so the number of initial checks has been reduced to 4, by checking the plain_word first.
+        # However, in the execution of the manipulation, the non-plain word has primacy
+        if plain_word + cls.ELISION_replacement in cls.ELISION_plain:
+            if word + cls.ELISION_replacement in cls.ELISION_norm:
+                word = cls.ELISION_norm[word + cls.ELISION_replacement]
+            else:            
+                word = cls.ELISION_plain[plain_word + cls.ELISION_replacement]
+            try:
+                if post[0] in cls.ELISION_signs:
+                    post[0] = cls.ELISION_replacement
+            except:
+                post = cls.ELISION_replacement + post
+            
+        elif plain_word in cls.ELISION_plain:
+            if word in cls.ELISION_norm:
+                word = cls.ELISION_norm[word]
             else:
-                if f'{word}᾽' in cls.ELISION_norm:
-                    word = cls.ELISION_norm[f'{word}᾽']
-                    post = post[1:]
-        elif pre.endswith(ELISION_signs):
-            if f'᾽{word}' in cls.ELISION_norm:
-                word = cls.ELISION_norm[f'᾽{word}']
-                pre = pre[:-1]
-
-        # If everything above was unsuccessful, we try the plain forms
-        # Hence, we continue the elif and do not start with another if
-        # Check the plain versions of elided forms
-        # Check whether the word is in  ELISION_plain
-        if plain_word in cls.ELISION_plain:
-            word = cls.ELISION_plain[word]
-        # Check whether the abbreviation sign resides in the 'pre' or 'post' parts
-        elif post.startswith(ELISION_signs):
-            if pre.endswith(ELISION_signs):
-                if f'᾽{plain_word}᾽' in cls.ELISION_plain:
-                    word = cls.ELISION_plain[f'᾽{plain_word}᾽']
-                    pre, post = pre[:-1], post[1:]
+                word = cls.ELISION_plain[plain_word]
+        
+        elif cls.ELISION_replacement + plain_word in cls.ELISION_plain:
+            if cls.ELISION_replacement + word in cls.ELISION_norm:
+                word = cls.ELISION_norm[cls.ELISION_replacement + word]
             else:
-                if f'{plain_word}᾽' in cls.ELISION_plain:
-                    word = cls.ELISION_plain[f'{plain_word}᾽']
-                    post = post[1:]
-        elif pre.endswith(ELISION_signs):
-            if f'᾽{plain_word}' in cls.ELISION_plain:
-                word = cls.ELISION_plain[f'᾽{plain_word}']
-                pre = pre[:-1]
+                word = cls.ELISION_plain[cls.ELISION_replacement + plain_word]
+            try:
+                if pre[-1] in cls.ELISION_signs:
+                    pre[-1] = cls.ELISION_replacement
+            except:
+                pre = pre + cls.ELISION_replacement
+            
+        elif cls.ELISION_replacement + plain_word + cls.ELISION_replacement in cls.ELISION_plain:
+            if cls.ELISION_replacement + word + cls.ELISION_replacement in cls.ELISION_norm:
+                word = cls.ELISION_norm[cls.ELISION_replacement + word + cls.ELISION_replacement]
+            else:
+                word = cls.ELISION_plain[cls.ELISION_replacement + plain_word + cls.ELISION_replacement]
+                try:                    
+                    if pre[-1] in cls.ELISION_signs:
+                        pre[-1] = cls.ELISION_replacement
+                except:
+                    pre = pre + cls.ELISION_replacement
+                try:
+                    if post[0] in cls.ELISION_signs:
+                        post[0] = cls.ELISION_replacement
+                except:
+                    post = cls.ELISION_replacement + post
+           
 
-        # NB the result of the plain-check might by multiple ','-separated words!
-        # However, they cannot be crasis forms!
-
-        # Handling crasis forms
-        # NB crasis results in 2 words separated by space!
+        ##########
+        # CRASIS #
+        ##########
+        
+        # NB1 Crasis forms cannot be elided forms and vice versa...        
+        # NB2 crasis results in 2 words separated by space!
         if word in cls.CRASIS_norm:
             word = cls.CRASIS_norm[word]
 
-        # Because crasis results in 2 words, we continue with a FOR statement!
+        # Because crasis results in 2 words, we continue with a FOR statement to perform all later checks on each word!
         # We also define a new plain form!
         # We also define a result list into which the resulting tokens will be gathered
         # and we define a preAssigned that tells whether the pre-feature has already be assigned
@@ -274,9 +300,9 @@ class Greek(Generic):
                 try:
                     s = syllabify(w)
                     for accentuation in possible_accentuations(s):
-                        word_set.add(add_accentuation(s, accentuation))
+                        word_set.add(add_accent(s, accentuation))
                     for accentuation in possible_accentuations(s, default_short=True):
-                        word_set.add(add_accentuation(s, accentuation))
+                        word_set.add(add_accent(s, accentuation))
                     w = ','.join(word_set)
                 except:
                     pass
@@ -321,8 +347,6 @@ class Greek(Generic):
         lemmatizer_open.close()
         return lemmatizer
 
-#     Start the lemmatizer immediately to be used in the lemmatize() method
-#     lemmatizer = startLemmatizer.__func__()
 
     @classmethod
     def lemmatize(cls, word, lemmatizer, comma=True):
@@ -354,13 +378,6 @@ class Greek(Generic):
             res = worker(word)
         return res
 
-#     @staticmethod
-#     def checkEncoding(elem):
-#         try:
-#             elem.encode('ascii')
-#             return 'beta'
-#         except UnicodeEncodeError:
-#             return 'uni'
 
     @classmethod
     def beta2uni(cls, word):
