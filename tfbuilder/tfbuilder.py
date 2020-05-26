@@ -96,7 +96,7 @@ class Conversion:
                         self.udnorm, sett['function'](t))
 
             # NB The replace_func might return multiple tokens if words are split like greek crasis forms
-            for token in self.replace_func(t):
+            for token in self.replace_func(t, **):
                 token_processed = {}
 
                 # Assign pre-replace formats
@@ -138,7 +138,8 @@ class Csv2tf(Conversion):
         self.sections = self.head[:-1] if self.header == True \
             else (list(filter(None, self.generic['citation_scheme'].lower().split('/')))
                   if 'citation_scheme' in self.generic
-                  else list(filter(None, input("No header data could be found; please enter an appropriate header: ").lower().split())))
+                  else list(filter(None, input("No header data could be found; "
+                                               "please enter an appropriate header: ").lower().split())))
         self.structs = tuple(
             ('_book',) + tuple(self.head[:-1]) + tuple(self.struct_counter))
         self.otext = {
@@ -468,6 +469,7 @@ class Xml2tf(Conversion):
             if code == 'text':
                 # Check whether the text is part of non-text data like head- or note-features
                 # TODO: position footnotes
+#                 print(tagList)
                 if tagList[-1] in self.non_text_tags:
                     tag = tagList[-1]
                     content = normalize(udnorm, content)
@@ -739,19 +741,20 @@ def convert(
         file_elem='',
         csv_delimiter=',',
         tlg_out=False,
+        supply_accents=False,           # Supply accents if absent
         ignore_empty=True,              # Ignore files that don't produce slots
-        generic=generic_metadata,  # Generic metadata from tf_config
-        lang='generic',         # Chosen language as available in langsettings in tf_config
+        generic=generic_metadata,       # Generic metadata from tf_config
+        lang='generic',                 # Chosen language as available in langsettings in tf_config
         # Used to introduce subclases of a language; e.g. 'tlge' in addition to 'greek'
         typ=False,
         # If True: first line of csv would be taken as header. Also tuple and list are allowed
         header=False,
-        version='1.0',             # Version number to be added in the metadata of every tf-file
+        version='1.0',                  # Version number to be added in the metadata of every tf-file
         langsettings=langsettings,      # Reference to langsettings
-        multiprocessing=False,             # Can be used if many files need to be converted. If 'True', the program checks number of available cores authomatically; if int, it will try to use that number of cores
+        multiprocessing=False,          # Can be used if many files need to be converted. If 'True', the program checks number of available cores authomatically; if int, it will try to use that number of cores
         # Defines the number of files to be send to each core in multiprocessing mode
         chunksize=1,
-        silent=False,             # Keeps TF messages silent
+        silent=False,                   # Keeps TF messages silent
 ):
     '''The convert function is the core of the tei2tf module
 
@@ -821,6 +824,11 @@ def convert(
                 # Inject metadata
                 metadata = tlge_metadata[filename]
                 kwargs['generic'].update(tlge_metadata[filename])
+                
+                # Add original filename to metadata
+                kwargs['generic']['filename'] = filename
+                if not 'title' in kwargs['generic']:
+                    kwargs['generic']['title'] = filename.rsplit('.', 1)[0]
 
                 if tlg_out == True:
                     dirs = kwargs['generic']['key'].split(' ')
@@ -892,6 +900,9 @@ def convert(
             if not body_index:
                 return False
             kwargs['generic'].update(metadata)
+            # Add filename
+            filename = path.splitext(file)[0].split('/')[-1]
+            kwargs['generic']['filename'] = filename
 
             # definition of output dir structure on the basis of metadata or tlg-out
             if tlg_out == True:
@@ -943,7 +954,7 @@ def convert(
                     f'   |    Conversion of {file.split("/")[-1]} was successful...!\n')
             else:
                 tm.info(
-                    '   |    Unfortunately, conversion of {file.split("/")[-1]} was not successful...\n')
+                    f'   |    Unfortunately, conversion of {file.split("/")[-1]} was not successful...\n')
 
     # Define list of files to be processed
     file_list = glob(f'{inpath}/**/*{file_elem}*.*', recursive=True)

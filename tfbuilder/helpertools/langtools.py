@@ -168,7 +168,7 @@ class Greek(Generic):
     
 
     @classmethod
-    def replace(cls, token):
+    def replace(cls, token, **kwargs):
         pre, word, post = token
         # Convert to Unicode anyway, because sometimes there is Latin characters in Greek words
         # We also bring the Unicode type into concord with the norm: 'NFD'
@@ -295,17 +295,18 @@ class Greek(Generic):
             # The next fase is that of accentuating unaccentuated words
             # NB any possible ','-separated value is anyway accentuated
             word_set = set()
-            if w == plainLow(w):
-                # Try to syllabify the word, but if it gives errors: just pass it...
-                try:
-                    s = syllabify(w)
-                    for accentuation in possible_accentuations(s):
-                        word_set.add(add_accent(s, accentuation))
-                    for accentuation in possible_accentuations(s, default_short=True):
-                        word_set.add(add_accent(s, accentuation))
-                    w = ','.join(word_set)
-                except:
-                    pass
+#             if w == plainLow(w):
+#                 if kwargs['supply_accents']:
+#                     # Try to syllabify the word, but if it gives errors: just pass it...
+#                     try:
+#                         s = syllabify(w)
+#                         for accentuation in possible_accentuations(s):
+#                             word_set.add(add_accent(s, accentuation))
+#                         for accentuation in possible_accentuations(s, default_short=True):
+#                             word_set.add(add_accent(s, accentuation))
+#                         w = ','.join(word_set)
+#                     except:
+#                         pass
 
             # Put the results in the result list
             if len(word_list) > 1:
