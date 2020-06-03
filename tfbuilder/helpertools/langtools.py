@@ -280,7 +280,7 @@ class Greek(Generic):
                 w = w[:-1] + 'ς'
 
             # Handling nu sign '¯'
-            w = ''.join((n if not n == '¯' else 'ν' for n in w))
+            w = ''.join((n if not n in '¯' else 'ν' for n in w))
 
             # Handling various forms of ου
             if w_plain in ('ουχ', 'ουκ'):

@@ -96,7 +96,7 @@ class Conversion:
                         self.udnorm, sett['function'](t))
 
             # NB The replace_func might return multiple tokens if words are split like greek crasis forms
-            for token in self.replace_func(t, **):
+            for token in self.replace_func(t):
                 token_processed = {}
 
                 # Assign pre-replace formats
